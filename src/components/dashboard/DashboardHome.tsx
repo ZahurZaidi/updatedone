@@ -1,6 +1,6 @@
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { TrendingUp, Camera, Search, Calendar, Zap, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
+import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function DashboardHome() {
