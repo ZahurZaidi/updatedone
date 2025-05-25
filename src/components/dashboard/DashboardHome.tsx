@@ -155,22 +155,6 @@ export default function DashboardHome() {
                 </div>
               </div>
               <div className="flex justify-between items-center pt-4">
-                <div className="flex space-x-2">
-                  <img
-                    src="/placeholder.svg"
-                    alt="Before"
-                    width={60}
-                    height={60}
-                    className="rounded-lg border"
-                  />
-                  <img
-                    src="/placeholder.svg"
-                    alt="Current"
-                    width={60}
-                    height={60}
-                    className="rounded-lg border"
-                  />
-                </div>
                 <Link to="/dashboard/progress">
                   <Button variant="outline" size="sm">
                     View Full Progress
