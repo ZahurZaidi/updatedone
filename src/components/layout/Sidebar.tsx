@@ -30,7 +30,7 @@ const Sidebar: React.FC = () => {
       <div className="py-6 px-4">
         <div className="flex items-center justify-center mb-8">
           <span className="text-2xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">
-            GlowUp
+            CARE CANVAS
           </span>
         </div>
         
