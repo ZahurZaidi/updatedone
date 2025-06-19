@@ -53,26 +53,49 @@ const Header: React.FC = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              to="/" 
+              to="/"
               className={`text-sm font-medium transition-colors
                 ${location.pathname === '/' 
                   ? 'text-primary-600' 
                   : 'text-gray-700 hover:text-primary-600'
                 }
               `}
+              onClick={(e) => {
+                if (location.pathname === '/') {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
             >
               Home
             </Link>
             <Link 
-              to="#" 
-              className={`text-sm font-medium transition-colors
-`}
+              to="#"
+              className={`text-sm font-medium transition-colors`}
+              onClick={(e) => {
+                e.preventDefault();
+                if (location.pathname === '/') {
+                  const el = document.getElementById('features');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  window.location.href = '/#features';
+                }
+              }}
             >
               Features
             </Link>
             <Link 
-              to="#" 
+              to="#"
               className={`text-sm font-medium transition-colors`}
+              onClick={(e) => {
+                e.preventDefault();
+                if (location.pathname === '/') {
+                  const el = document.getElementById('faq');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  window.location.href = '/#faq';
+                }
+              }}
             >
               FAQ
             </Link>
@@ -130,6 +153,12 @@ const Header: React.FC = () => {
                     : 'text-gray-700 hover:bg-gray-50'
                   }
                 `}
+                onClick={(e) => {
+                  if (location.pathname === '/') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
               >
                 Home
               </Link>
@@ -149,6 +178,12 @@ const Header: React.FC = () => {
                 className={`text-base font-medium px-4 py-2 rounded-md`}
               >
                 FAQ
+              </Link>
+              <Link 
+                to="#"
+                className={`text-base font-medium px-4 py-2 rounded-md`}
+              >
+                Contact
               </Link>
               
               {isAuthenticated ? (

@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { useAuth } from '../../context/AuthContext';
 
-const LoginForm: React.FC = () => {
+const SignupForm: React.FC = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,13 +20,13 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      await signup(name, email, password);
       navigate('/dashboard');
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to log in');
+        setError('Failed to sign up');
       }
     } finally {
       setIsLoading(false);
@@ -35,9 +36,9 @@ const LoginForm: React.FC = () => {
   return (
     <div className="max-w-md w-full mx-auto">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-display font-bold text-gray-900">Welcome back</h2>
+        <h2 className="text-3xl font-display font-bold text-gray-900">Create your account</h2>
         <p className="mt-2 text-sm text-gray-600">
-          Log in to your account to continue your skincare journey
+          Sign up to start your skincare journey
         </p>
       </div>
       
@@ -50,6 +51,16 @@ const LoginForm: React.FC = () => {
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
+          id="name"
+          type="text"
+          label="Name"
+          placeholder="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          leftIcon={<User className="h-5 w-5 text-gray-400" />}
+        />
+        <Input
           id="email"
           type="email"
           label="Email address"
@@ -59,41 +70,30 @@ const LoginForm: React.FC = () => {
           required
           leftIcon={<Mail className="h-5 w-5 text-gray-400" />}
         />
-        
-        <div>
-          <div className="flex items-center justify-between">
-            <Input
-              id="password"
-              type="password"
-              label="Password"
-              placeholder="Your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              leftIcon={<Lock className="h-5 w-5 text-gray-400" />}
-            />
-          </div>
-          <div className="text-right mt-1">
-            <Link to="/auth/forgot-password" className="text-xs text-primary-600 hover:text-primary-500">
-              Forgot your password?
-            </Link>
-          </div>
-        </div>
-        
+        <Input
+          id="password"
+          type="password"
+          label="Password"
+          placeholder="Create a password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          leftIcon={<Lock className="h-5 w-5 text-gray-400" />}
+        />
         <Button
           type="submit"
           className="w-full"
           isLoading={isLoading}
         >
-          Sign In
+          Sign Up
         </Button>
       </form>
       
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/auth/signup" className="font-medium text-primary-600 hover:text-primary-500">
-            Sign up
+          Already have an account?{' '}
+          <Link to="/auth/login" className="font-medium text-primary-600 hover:text-primary-500">
+            Sign in
           </Link>
         </p>
       </div>
@@ -101,4 +101,4 @@ const LoginForm: React.FC = () => {
   );
 };
 
-export default LoginForm;
+export default SignupForm;

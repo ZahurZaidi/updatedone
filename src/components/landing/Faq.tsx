@@ -40,7 +40,7 @@ const Faq: React.FC = () => {
   };
   
   return (
-    <section className="py-24 bg-gray-50">
+    <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-display font-bold text-gray-900">

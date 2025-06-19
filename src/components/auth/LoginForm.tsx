@@ -85,7 +85,7 @@ const LoginForm: React.FC = () => {
           className="w-full"
           isLoading={isLoading}
         >
-          Sign In
+          Log In  
         </Button>
       </form>
       
