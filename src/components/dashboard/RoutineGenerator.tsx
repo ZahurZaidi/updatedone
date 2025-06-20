@@ -1,511 +1,323 @@
-"use client"
-
 import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import {
-  Calendar,
-  Clock,
-  Plus,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Sun,
-  Moon,
-  Droplets,
-  Shield,
-  Sparkles,
-  Timer,
-  RotateCcw,
-} from "lucide-react"
+import { Sparkles, Loader2, Sun, Moon, Clock, Info } from "lucide-react"
+
+interface RoutineStep {
+  step: number;
+  product_type: string;
+  product_name: string;
+  instructions: string;
+  timing: string;
+  benefits: string;
+}
+
+interface RoutineResponse {
+  morning_routine: RoutineStep[];
+  evening_routine: RoutineStep[];
+  general_tips: string;
+  frequency_notes: string;
+}
 
 export default function RoutineGenerator() {
-  const [activeTab, setActiveTab] = useState("current")
-  const [isEditing, setIsEditing] = useState(false)
-  const [routineEnabled, setRoutineEnabled] = useState(true)
+  const [skinType, setSkinType] = useState("")
+  const [skinConcerns, setSkinConcerns] = useState<string[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [routine, setRoutine] = useState<RoutineResponse | null>(null)
+  const [error, setError] = useState("")
 
-  const currentRoutine = {
-    morning: [
-      {
-        id: 1,
-        name: "Gentle Cleanser",
-        brand: "CeraVe",
-        type: "cleanser",
-        duration: "1-2 minutes",
-        instructions: "Massage gently with lukewarm water",
-        completed: true,
-      },
-      {
-        id: 2,
-        name: "Vitamin C Serum",
-        brand: "The Ordinary",
-        type: "serum",
-        duration: "Wait 10 minutes",
-        instructions: "Apply 2-3 drops, avoid eye area",
-        completed: true,
-      },
-      {
-        id: 3,
-        name: "Hyaluronic Acid",
-        brand: "The Inkey List",
-        type: "serum",
-        duration: "Wait 5 minutes",
-        instructions: "Apply to damp skin for better absorption",
-        completed: true,
-      },
-      {
-        id: 4,
-        name: "Daily Moisturizer",
-        brand: "Neutrogena",
-        type: "moisturizer",
-        duration: "1 minute",
-        instructions: "Apply evenly to face and neck",
-        completed: true,
-      },
-      {
-        id: 5,
-        name: "SPF 30 Sunscreen",
-        brand: "EltaMD",
-        type: "sunscreen",
-        duration: "1 minute",
-        instructions: "Apply generously, reapply every 2 hours",
-        completed: true,
-      },
-    ],
-    evening: [
-      {
-        id: 6,
-        name: "Oil Cleanser",
-        brand: "DHC",
-        type: "cleanser",
-        duration: "1-2 minutes",
-        instructions: "Massage to remove makeup and sunscreen",
-        completed: false,
-      },
-      {
-        id: 7,
-        name: "Gentle Cleanser",
-        brand: "CeraVe",
-        type: "cleanser",
-        duration: "1-2 minutes",
-        instructions: "Second cleanse for deep cleaning",
-        completed: false,
-      },
-      {
-        id: 8,
-        name: "Retinol Serum",
-        brand: "Paula's Choice",
-        type: "treatment",
-        duration: "Wait 20 minutes",
-        instructions: "Start 2x/week, gradually increase",
-        completed: false,
-      },
-      {
-        id: 9,
-        name: "Night Moisturizer",
-        brand: "Olay",
-        type: "moisturizer",
-        duration: "1 minute",
-        instructions: "Apply generously for overnight repair",
-        completed: false,
-      },
-    ],
+  const skinTypes = ["Oily", "Dry", "Combination", "Normal", "Sensitive"]
+  const concerns = [
+    "Acne", "Aging", "Dark Spots", "Dryness", "Oiliness", 
+    "Sensitivity", "Large Pores", "Dullness", "Uneven Texture"
+  ]
+
+  const toggleConcern = (concern: string) => {
+    setSkinConcerns(prev => 
+      prev.includes(concern) 
+        ? prev.filter(c => c !== concern)
+        : [...prev, concern]
+    )
   }
 
-  const routineStats = {
-    streak: 15,
-    completionRate: 87,
-    totalProducts: 9,
-    avgTime: 12,
-  }
+  const generateRoutine = async () => {
+    if (!skinType || skinConcerns.length === 0) return;
+    
+    setIsGenerating(true);
+    setError("");
+    
+    try {
+      const prompt = `You are a skincare expert. Create a detailed morning and evening skincare routine for someone with ${skinType} skin and the following concerns: ${skinConcerns.join(', ')}.
 
-  const getProductIcon = (type: string) => {
-    switch (type) {
-      case "cleanser":
-        return <Droplets className="w-4 h-4" />
-      case "serum":
-        return <Sparkles className="w-4 h-4" />
-      case "moisturizer":
-        return <Shield className="w-4 h-4" />
-      case "sunscreen":
-        return <Sun className="w-4 h-4" />
-      case "treatment":
-        return <Timer className="w-4 h-4" />
-      default:
-        return <Droplets className="w-4 h-4" />
+Please provide a comprehensive routine with specific product types, application instructions, timing, and benefits. Format your response as a JSON object with this structure:
+
+{
+  "morning_routine": [
+    {
+      "step": 1,
+      "product_type": "Cleanser",
+      "product_name": "Gentle Foaming Cleanser",
+      "instructions": "Apply to damp skin, massage gently for 30 seconds, rinse with lukewarm water",
+      "timing": "5-10 minutes",
+      "benefits": "Removes overnight buildup without stripping skin"
     }
-  }
-
-  const getProductColor = (type: string) => {
-    switch (type) {
-      case "cleanser":
-        return "text-blue-600 bg-blue-50"
-      case "serum":
-        return "text-purple-600 bg-purple-50"
-      case "moisturizer":
-        return "text-green-600 bg-green-50"
-      case "sunscreen":
-        return "text-orange-600 bg-orange-50"
-      case "treatment":
-        return "text-teal-600 bg-teal-50"
-      default:
-        return "text-gray-600 bg-gray-50"
+  ],
+  "evening_routine": [
+    {
+      "step": 1,
+      "product_type": "Oil Cleanser",
+      "product_name": "Cleansing Oil",
+      "instructions": "Apply to dry skin, massage for 1 minute, add water to emulsify, rinse",
+      "timing": "2-3 minutes",
+      "benefits": "Removes makeup and sunscreen effectively"
     }
-  }
+  ],
+  "general_tips": "General advice for this skin type and concerns",
+  "frequency_notes": "How often to use certain products"
+}
+
+Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include specific timing and detailed instructions.`;
+
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+        const responseText = data.candidates[0].content.parts[0].text;
+        
+        // Try to extract JSON from the response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const routineData = JSON.parse(jsonMatch[0]);
+          setRoutine(routineData);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } else {
+        throw new Error('Invalid response from API');
+      }
+    } catch (err) {
+      console.error('Error generating routine:', err);
+      setError('Failed to generate routine. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Skincare Routine</h1>
-          <p className="text-gray-600 mt-1">Your personalized daily skincare schedule</p>
+          <h1 className="text-3xl font-bold text-gray-900">Routine Generator</h1>
+          <p className="text-gray-600 mt-1">Get a personalized skincare routine based on your skin type and concerns</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <label htmlFor="routine-enabled" className="text-sm font-medium text-gray-700">Routine Active</label>
-            <input
-              id="routine-enabled"
-              type="checkbox"
-              checked={routineEnabled}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutineEnabled(e.target.checked)}
-              className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(!isEditing)}
-            className="border-teal-200 text-teal-700 hover:bg-teal-50"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            {isEditing ? "Done Editing" : "Edit Routine"}
-          </Button>
+        <div className="mt-4 sm:mt-0">
+          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded inline-flex items-center">
+            <Sparkles className="w-3 h-3 mr-1" />
+            AI-Generated
+          </span>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Current Streak</p>
-                <p className="text-2xl font-bold text-teal-600">{routineStats.streak} days</p>
-              </div>
-              <Calendar className="w-8 h-8 text-teal-500" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-0 shadow-md">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold text-blue-600">{routineStats.completionRate}%</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-0 shadow-md">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Products</p>
-                <p className="text-2xl font-bold text-purple-600">{routineStats.totalProducts}</p>
-              </div>
-              <Sparkles className="w-8 h-8 text-purple-500" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-0 shadow-md">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Time</p>
-                <p className="text-2xl font-bold text-green-600">{routineStats.avgTime} min</p>
-              </div>
-              <Clock className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="space-y-6">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
-          <button
-            className={`px-4 py-2 rounded ${activeTab === "current" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
-            onClick={() => setActiveTab("current")}
-          >
-            Current Routine
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${activeTab === "generator" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
-            onClick={() => setActiveTab("generator")}
-          >
-            Generate New
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${activeTab === "history" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
-            onClick={() => setActiveTab("history")}
-          >
-            History
-          </button>
-        </div>
-        {/* Tab Content */}
-        {activeTab === "current" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Morning Routine */}
-            <Card className="border-0 shadow-md">
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <Sun className="w-5 h-5 mr-2 text-orange-500" />
-                  <span className="text-lg font-semibold">Morning Routine</span>
-                  <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Completed</span>
-                </div>
-                <div className="text-gray-600 mb-2">Start your day with healthy skin</div>
-                {currentRoutine.morning.map((product, index) => (
-                  <div
-                    key={product.id}
-                    className={`p-4 rounded-lg border transition-all ${
-                      product.completed ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-500">{index + 1}.</span>
-                          <div className={`p-2 rounded-lg ${getProductColor(product.type)}`}>{getProductIcon(product.type)}</div>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{product.name}</h4>
-                          <p className="text-sm text-gray-600">{product.brand}</p>
-                          <p className="text-xs text-gray-500 mt-1">{product.instructions}</p>
-                          <p className="text-xs text-teal-600 mt-1">{product.duration}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {product.completed && <CheckCircle className="w-5 h-5 text-green-500" />}
-                        {isEditing && (
-                          <div className="flex space-x-1">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {isEditing && (
-                  <Button variant="outline" className="w-full border-dashed">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Product
-                  </Button>
-                )}
-              </div>
-            </Card>
-
-            {/* Evening Routine */}
-            <Card className="border-0 shadow-md">
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <Moon className="w-5 h-5 mr-2 text-indigo-500" />
-                  <span className="text-lg font-semibold">Evening Routine</span>
-                  <span className="ml-2 bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">Pending</span>
-                </div>
-                <div className="text-gray-600 mb-2">End your day with restorative care</div>
-                {currentRoutine.evening.map((product, index) => (
-                  <div
-                    key={product.id}
-                    className={`p-4 rounded-lg border transition-all ${
-                      product.completed ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-500">{index + 1}.</span>
-                          <div className={`p-2 rounded-lg ${getProductColor(product.type)}`}>{getProductIcon(product.type)}</div>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{product.name}</h4>
-                          <p className="text-sm text-gray-600">{product.brand}</p>
-                          <p className="text-xs text-gray-500 mt-1">{product.instructions}</p>
-                          <p className="text-xs text-teal-600 mt-1">{product.duration}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {product.completed && <CheckCircle className="w-5 h-5 text-green-500" />}
-                        {isEditing && (
-                          <div className="flex space-x-1">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {isEditing && (
-                  <Button variant="outline" className="w-full border-dashed">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Product
-                  </Button>
-                )}
-              </div>
-            </Card>
-          </div>
-        )}
-        {activeTab === "generator" && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Configuration Section */}
+        <div className="lg:col-span-1">
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <span className="text-lg font-semibold">Generate Personalized Routine</span>
-              <p className="text-gray-600 mb-4">Create a custom routine based on your skin type and goals</p>
+              <h2 className="text-xl font-semibold mb-4">Your Skin Profile</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Skin Type
+                  </label>
+                  <select
+                    value={skinType}
+                    onChange={(e) => setSkinType(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Select your skin type</option>
+                    {skinTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Skin Concerns (Select all that apply)
+                  </label>
+                  <div className="space-y-2">
+                    {concerns.map(concern => (
+                      <label key={concern} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={skinConcerns.includes(concern)}
+                          onChange={() => toggleConcern(concern)}
+                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">{concern}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={generateRoutine}
+                  disabled={!skinType || skinConcerns.length === 0 || isGenerating}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Routine
+                    </>
+                  )}
+                </Button>
+
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Routine Display */}
+        <div className="lg:col-span-2">
+          {routine ? (
+            <div className="space-y-6">
+              {/* Morning Routine */}
+              <Card className="border-0 shadow-md">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <Sun className="w-5 h-5 mr-2 text-orange-500" />
+                    <h2 className="text-xl font-semibold">Morning Routine</h2>
+                  </div>
+                  <div className="space-y-4">
+                    {routine.morning_routine.map((step, index) => (
+                      <div key={index} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-medium text-orange-800">
+                            Step {step.step}: {step.product_type}
+                          </h3>
+                          <div className="flex items-center text-xs text-orange-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {step.timing}
+                          </div>
+                        </div>
+                        <p className="text-sm text-orange-700 mb-2">
+                          <strong>Product:</strong> {step.product_name}
+                        </p>
+                        <p className="text-sm text-orange-700 mb-2">
+                          <strong>Instructions:</strong> {step.instructions}
+                        </p>
+                        <p className="text-sm text-orange-600">
+                          <strong>Benefits:</strong> {step.benefits}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Evening Routine */}
+              <Card className="border-0 shadow-md">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <Moon className="w-5 h-5 mr-2 text-indigo-500" />
+                    <h2 className="text-xl font-semibold">Evening Routine</h2>
+                  </div>
+                  <div className="space-y-4">
+                    {routine.evening_routine.map((step, index) => (
+                      <div key={index} className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-medium text-indigo-800">
+                            Step {step.step}: {step.product_type}
+                          </h3>
+                          <div className="flex items-center text-xs text-indigo-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {step.timing}
+                          </div>
+                        </div>
+                        <p className="text-sm text-indigo-700 mb-2">
+                          <strong>Product:</strong> {step.product_name}
+                        </p>
+                        <p className="text-sm text-indigo-700 mb-2">
+                          <strong>Instructions:</strong> {step.instructions}
+                        </p>
+                        <p className="text-sm text-indigo-600">
+                          <strong>Benefits:</strong> {step.benefits}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Tips and Notes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="skin-type" className="text-sm font-medium text-gray-700">Skin Type</label>
-                    <select id="skin-type" className="w-full border rounded px-3 py-2">
-                      <option value="">Select your skin type</option>
-                      <option value="oily">Oily</option>
-                      <option value="dry">Dry</option>
-                      <option value="combination">Combination</option>
-                      <option value="sensitive">Sensitive</option>
-                      <option value="normal">Normal</option>
-                    </select>
+                <Card className="border-0 shadow-md">
+                  <div className="p-6">
+                    <div className="flex items-center mb-3">
+                      <Info className="w-5 h-5 mr-2 text-blue-500" />
+                      <h3 className="font-semibold text-blue-800">General Tips</h3>
+                    </div>
+                    <p className="text-sm text-blue-700">{routine.general_tips}</p>
                   </div>
+                </Card>
 
-                  <div>
-                    <label htmlFor="skin-concerns" className="text-sm font-medium text-gray-700">Primary Concerns</label>
-                    <select id="skin-concerns" className="w-full border rounded px-3 py-2">
-                      <option value="">Select main concern</option>
-                      <option value="acne">Acne</option>
-                      <option value="aging">Anti-aging</option>
-                      <option value="hyperpigmentation">Dark spots</option>
-                      <option value="dryness">Dryness</option>
-                      <option value="sensitivity">Sensitivity</option>
-                    </select>
+                <Card className="border-0 shadow-md">
+                  <div className="p-6">
+                    <div className="flex items-center mb-3">
+                      <Clock className="w-5 h-5 mr-2 text-green-500" />
+                      <h3 className="font-semibold text-green-800">Frequency Notes</h3>
+                    </div>
+                    <p className="text-sm text-green-700">{routine.frequency_notes}</p>
                   </div>
-
-                  <div>
-                    <label htmlFor="routine-complexity" className="text-sm font-medium text-gray-700">Routine Complexity</label>
-                    <select id="routine-complexity" className="w-full border rounded px-3 py-2">
-                      <option value="">Choose complexity</option>
-                      <option value="minimal">Minimal (3-4 steps)</option>
-                      <option value="moderate">Moderate (5-7 steps)</option>
-                      <option value="comprehensive">Comprehensive (8+ steps)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="budget" className="text-sm font-medium text-gray-700">Budget Range</label>
-                    <select id="budget" className="w-full border rounded px-3 py-2">
-                      <option value="">Select budget</option>
-                      <option value="budget">Budget ($0-50)</option>
-                      <option value="mid">Mid-range ($50-150)</option>
-                      <option value="luxury">Luxury ($150+)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="time-available" className="text-sm font-medium text-gray-700">Time Available</label>
-                    <select id="time-available" className="w-full border rounded px-3 py-2">
-                      <option value="">How much time?</option>
-                      <option value="quick">Quick (5-10 min)</option>
-                      <option value="moderate">Moderate (10-20 min)</option>
-                      <option value="thorough">Thorough (20+ min)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="allergies" className="text-sm font-medium text-gray-700">Known Allergies</label>
-                    <textarea
-                      id="allergies"
-                      className="w-full border rounded px-3 py-2"
-                      placeholder="List any known allergies or ingredients to avoid..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-4 mt-4">
-                <Button className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Routine
-                </Button>
-                <Button variant="outline">
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset Form
-                </Button>
+                </Card>
               </div>
             </div>
-          </Card>
-        )}
-        {activeTab === "history" && (
-          <Card className="border-0 shadow-md">
-            <div className="p-6">
-              <span className="text-lg font-semibold">Routine History</span>
-              <p className="text-gray-600 mb-4">Track your routine consistency over time</p>
-              <div className="space-y-4">
-                <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-gray-600">
-                  <div>Mon</div>
-                  <div>Tue</div>
-                  <div>Wed</div>
-                  <div>Thu</div>
-                  <div>Fri</div>
-                  <div>Sat</div>
-                  <div>Sun</div>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 28 }, (_, i) => (
-                    <div
-                      key={i}
-                      className={`aspect-square rounded-lg border-2 ${
-                        Math.random() > 0.3
-                          ? "bg-teal-100 border-teal-300"
-                          : Math.random() > 0.5
-                            ? "bg-orange-100 border-orange-300"
-                            : "bg-gray-100 border-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-center space-x-6 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-teal-100 border-2 border-teal-300 rounded"></div>
-                    <span>Completed</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded"></div>
-                    <span>Partial</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded"></div>
-                    <span>Missed</span>
-                  </div>
-                </div>
+          ) : (
+            <Card className="border-0 shadow-md">
+              <div className="p-12 text-center">
+                <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Ready to Generate Your Routine
+                </h3>
+                <p className="text-gray-600">
+                  Select your skin type and concerns to get a personalized skincare routine
+                </p>
               </div>
-            </div>
-          </Card>
-        )}
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   )

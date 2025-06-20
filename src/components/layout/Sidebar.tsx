@@ -2,11 +2,9 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, 
-  BarChart, 
   Camera, 
   Search, 
   Calendar, 
-  Sparkles, 
   Settings, 
   User 
 } from 'lucide-react';
@@ -17,11 +15,9 @@ const Sidebar: React.FC = () => {
   
   const navItems = [
     { label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
-    { label: 'Progress Tracker', icon: <BarChart size={20} />, path: '/dashboard/progress' },
     { label: 'Facial Analysis', icon: <Camera size={20} />, path: '/dashboard/analysis' },
     { label: 'Ingredient Checker', icon: <Search size={20} />, path: '/dashboard/ingredients' },
     { label: 'Routine Generator', icon: <Calendar size={20} />, path: '/dashboard/routine' },
-    { label: 'Quick Fix', icon: <Sparkles size={20} />, path: '/dashboard/quickfix' },
     { label: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings' },
   ];
 

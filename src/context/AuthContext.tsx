@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { supabase } from '../lib/supabase';
 
 type AuthContextType = {
   user: User | null;
@@ -8,6 +9,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  hasCompletedAssessment: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,15 +17,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
     const storedUser = localStorage.getItem('skincareUser');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      checkAssessmentStatus(userData.id);
     }
     setLoading(false);
   }, []);
+
+  const checkAssessmentStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('skin_assessments')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (data && !error) {
+        setHasCompletedAssessment(true);
+      }
+    } catch (error) {
+      console.error('Error checking assessment status:', error);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -41,8 +62,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         skinConcerns: [],
       };
       
+      // Save to Supabase
+      const { error } = await supabase
+        .from('users')
+        .upsert([{
+          id: userData.id,
+          email: userData.email,
+          name: userData.name
+        }]);
+
+      if (error) throw error;
+      
       localStorage.setItem('skincareUser', JSON.stringify(userData));
       setUser(userData);
+      await checkAssessmentStatus(userData.id);
     } catch (error) {
       console.error('Login failed:', error);
       throw new Error('Invalid email or password');
@@ -60,15 +93,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Mock user data
       const userData: User = {
-        id: '1',
+        id: Date.now().toString(), // Generate unique ID
         name: name,
         email: email,
         skinType: undefined,
         skinConcerns: [],
       };
       
+      // Save to Supabase
+      const { error } = await supabase
+        .from('users')
+        .insert([{
+          id: userData.id,
+          email: userData.email,
+          name: userData.name
+        }]);
+
+      if (error) throw error;
+      
       localStorage.setItem('skincareUser', JSON.stringify(userData));
       setUser(userData);
+      setHasCompletedAssessment(false);
     } catch (error) {
       console.error('Signup failed:', error);
       throw new Error('Could not create account');
@@ -80,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('skincareUser');
     setUser(null);
+    setHasCompletedAssessment(false);
   };
 
   return (
@@ -91,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         isAuthenticated: !!user,
+        hasCompletedAssessment,
       }}
     >
       {children}

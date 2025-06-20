@@ -12,6 +12,7 @@
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-slot": "^1.2.3",
+    "@supabase/supabase-js": "^2.39.0",
     "caniuse-lite": "^1.0.30001718",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.344.0",

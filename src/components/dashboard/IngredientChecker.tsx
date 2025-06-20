@@ -1,108 +1,118 @@
-"use client"
-
 import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { Search, Scan, CheckCircle, AlertTriangle, XCircle, Info, Camera, Upload, Star, ThumbsUp, ThumbsDown } from "lucide-react"
+import { Search, Loader2, Info, AlertTriangle, CheckCircle, Star } from "lucide-react"
+
+interface IngredientAnalysis {
+  benefits: string;
+  safety_usage_limit: string;
+  side_effects: string;
+  suitable_skin_types: string;
+  how_to_use: string;
+  mechanism_of_action: string;
+}
 
 export default function IngredientChecker() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [ingredientsList, setIngredientsList] = useState("")
+  const [ingredient, setIngredient] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [hasResults, setHasResults] = useState(false)
-
-  const analysisResults = {
-    overall: "Good",
-    safeCount: 8,
-    cautionCount: 2,
-    harmfulCount: 1,
-    ingredients: [
-      {
-        name: "Hyaluronic Acid",
-        status: "safe",
-        function: "Hydrating agent",
-        rating: 5,
-        description: "Excellent for all skin types, provides deep hydration",
-        suitability: "Perfect for your dry skin type",
-      },
-      {
-        name: "Niacinamide",
-        status: "safe",
-        function: "Vitamin B3, anti-inflammatory",
-        rating: 5,
-        description: "Reduces redness and controls oil production",
-        suitability: "Great for acne-prone areas",
-      },
-      {
-        name: "Retinol",
-        status: "caution",
-        function: "Anti-aging, cell turnover",
-        rating: 4,
-        description: "Powerful anti-aging ingredient, start slowly",
-        suitability: "Use with caution, may cause irritation initially",
-      },
-      {
-        name: "Glycolic Acid",
-        status: "caution",
-        function: "Chemical exfoliant",
-        rating: 3,
-        description: "Strong exfoliant, can cause sensitivity",
-        suitability: "Not recommended for sensitive skin",
-      },
-      {
-        name: "Fragrance",
-        status: "harmful",
-        function: "Scent enhancer",
-        rating: 1,
-        description: "Can cause allergic reactions and irritation",
-        suitability: "Avoid - you have sensitive skin",
-      },
-    ],
-  }
+  const [analysis, setAnalysis] = useState<IngredientAnalysis | null>(null)
+  const [error, setError] = useState("")
 
   const popularIngredients = [
-    { name: "Vitamin C", searches: 1250, trend: "up" },
-    { name: "Salicylic Acid", searches: 980, trend: "up" },
-    { name: "Ceramides", searches: 750, trend: "stable" },
-    { name: "Peptides", searches: 620, trend: "up" },
-    { name: "Alpha Arbutin", searches: 450, trend: "up" },
+    "Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C", "Salicylic Acid",
+    "Glycolic Acid", "Ceramides", "Peptides", "Alpha Arbutin", "Azelaic Acid"
   ]
 
-  const recentSearches = ["Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C Serum", "Salicylic Acid"]
+  const recentSearches = ["Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C"]
 
-  const handleAnalyze = () => {
-    setIsAnalyzing(true)
-    setTimeout(() => {
-      setIsAnalyzing(false)
-      setHasResults(true)
-    }, 2000)
-  }
+  const analyzeIngredient = async () => {
+    if (!ingredient.trim()) return;
+    
+    setIsAnalyzing(true);
+    setError("");
+    
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You have appropriate knowledge about all the beneficial ingredients in the skin care and its effects of curing the skin issues. You exactly know what is the safe quantity per application of every skin care ingredient. You are well aware of the side effects of the ingredients. As we know, different people have different skin types like Oily, Dry, Combination, Normal, Sensitive, so you also are expert in assessing the mentioned skin types and suitable ingredients for it.
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "safe":
-        return <CheckCircle className="w-5 h-5 text-green-500" />
-      case "caution":
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />
-      case "harmful":
-        return <XCircle className="w-5 h-5 text-red-500" />
-      default:
-        return <Info className="w-5 h-5 text-gray-500" />
+You will be given the name or compound of ingredient: "${ingredient}"
+
+Please provide the following information in a structured format:
+- Benefits of using it
+- Safety usage limit
+- Side effects
+- Which skin types can use it
+- How to use it
+- How it works (mechanism of action)
+
+Please format your response as a JSON object with these exact keys: benefits, safety_usage_limit, side_effects, suitable_skin_types, how_to_use, mechanism_of_action`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+        const responseText = data.candidates[0].content.parts[0].text;
+        
+        // Try to extract JSON from the response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysisData = JSON.parse(jsonMatch[0]);
+          setAnalysis(analysisData);
+        } else {
+          // Fallback: parse the text response manually
+          setAnalysis({
+            benefits: extractSection(responseText, 'benefits') || 'Benefits information not available',
+            safety_usage_limit: extractSection(responseText, 'safety') || 'Safety information not available',
+            side_effects: extractSection(responseText, 'side effects') || 'Side effects information not available',
+            suitable_skin_types: extractSection(responseText, 'skin types') || 'Suitable for most skin types',
+            how_to_use: extractSection(responseText, 'how to use') || 'Usage instructions not available',
+            mechanism_of_action: extractSection(responseText, 'mechanism') || 'Mechanism information not available'
+          });
+        }
+      } else {
+        throw new Error('Invalid response from API');
+      }
+    } catch (err) {
+      console.error('Error analyzing ingredient:', err);
+      setError('Failed to analyze ingredient. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
     }
-  }
+  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "safe":
-        return "bg-green-50 border-green-200 text-green-800"
-      case "caution":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800"
-      case "harmful":
-        return "bg-red-50 border-red-200 text-red-800"
-      default:
-        return "bg-gray-50 border-gray-200 text-gray-800"
+  const extractSection = (text: string, keyword: string): string => {
+    const lines = text.split('\n');
+    const startIndex = lines.findIndex(line => 
+      line.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    if (startIndex === -1) return '';
+    
+    let content = '';
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('-') || line.includes(':')) break;
+      if (line) content += line + ' ';
     }
-  }
+    
+    return content.trim();
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -115,7 +125,7 @@ export default function IngredientChecker() {
         <div className="mt-4 sm:mt-0">
           <span className="bg-green-100 text-green-800 px-2 py-1 rounded inline-flex items-center">
             <Search className="w-3 h-3 mr-1" />
-            Database Updated
+            AI-Powered Analysis
           </span>
         </div>
       </div>
@@ -125,115 +135,110 @@ export default function IngredientChecker() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <h2 className="text-xl font-semibold mb-2">Analyze Ingredients</h2>
-              <p className="text-gray-600 mb-4">Enter ingredients manually, scan a product, or upload an image</p>
-              {/* Manual Entry */}
+              <h2 className="text-xl font-semibold mb-4">Analyze Ingredient</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Product Name (Optional)</label>
-                  <input className="w-full border rounded px-3 py-2" placeholder="e.g., CeraVe Hydrating Cleanser" />
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Ingredient Name
+                  </label>
+                  <div className="flex space-x-2">
+                    <input
+                      className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g., Hyaluronic Acid, Niacinamide, Retinol..."
+                      value={ingredient}
+                      onChange={(e) => setIngredient(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && analyzeIngredient()}
+                    />
+                    <Button
+                      onClick={analyzeIngredient}
+                      disabled={!ingredient.trim() || isAnalyzing}
+                      className="bg-gradient-to-r from-teal-500 to-blue-600"
+                    >
+                      {isAnalyzing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Ingredients List</label>
-                  <textarea
-                    className="w-full border rounded px-3 py-2"
-                    placeholder="Enter ingredients separated by commas (e.g., Water, Glycerin, Hyaluronic Acid, Niacinamide...)"
-                    value={ingredientsList}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setIngredientsList(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                <Button
-                  onClick={handleAnalyze}
-                  className="w-full bg-gradient-to-r from-teal-500 to-blue-600"
-                  disabled={isAnalyzing || !ingredientsList.trim()}
-                >
-                  {isAnalyzing ? "Analyzing..." : "Analyze Ingredients"}
-                </Button>
-              </div>
-              {/* Scan Product */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mt-6">
-                <Scan className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="font-medium text-gray-900 mb-2">Scan Product Barcode</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Use your camera to scan the product barcode for instant analysis
-                </p>
-                <Button variant="outline">
-                  <Camera className="w-4 h-4 mr-2" />
-                  Open Camera
-                </Button>
-              </div>
-              {/* Upload Ingredient List */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mt-6">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="font-medium text-gray-900 mb-2">Upload Ingredient List</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload a photo of the ingredient list for automatic text recognition
-                </p>
-                <Button variant="outline">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose File
-                </Button>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+                    <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                    <span className="text-sm text-red-700">{error}</span>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
 
           {/* Analysis Results */}
-          {hasResults && (
+          {analysis && (
             <Card className="border-0 shadow-md">
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-semibold">Analysis Results</span>
-                  <span className={`px-2 py-1 rounded text-xs ${getStatusColor(analysisResults.overall.toLowerCase())}`}>
-                    {analysisResults.overall} Match
-                  </span>
-                </div>
-                <div className="text-gray-600 mb-2">Based on your skin type: Combination, Sensitive</div>
-                {/* Summary */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">{analysisResults.safeCount}</p>
-                    <p className="text-sm text-gray-600">Safe</p>
-                  </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <p className="text-2xl font-bold text-yellow-600">{analysisResults.cautionCount}</p>
-                    <p className="text-sm text-gray-600">Caution</p>
-                  </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{analysisResults.harmfulCount}</p>
-                    <p className="text-sm text-gray-600">Avoid</p>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold">Analysis Results</h2>
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                    ))}
                   </div>
                 </div>
-                {/* Detailed Results */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900">Ingredient Analysis</h3>
-                  {analysisResults.ingredients.map((ingredient, index) => (
-                    <div key={index} className={`p-4 rounded-lg border ${getStatusColor(ingredient.status)}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon(ingredient.status)}
-                          <h4 className="font-medium">{ingredient.name}</h4>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${i < ingredient.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-                            />
-                          ))}
-                        </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                        <h3 className="font-medium text-green-800">Benefits</h3>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{ingredient.function}</p>
-                      <p className="text-sm mb-2">{ingredient.description}</p>
-                      <p className="text-sm font-medium">{ingredient.suitability}</p>
+                      <p className="text-sm text-green-700">{analysis.benefits}</p>
                     </div>
-                  ))}
-                </div>
-                {/* Recommendations */}
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg text-left">
-                  <Info className="h-4 w-4 inline mr-2" />
-                  <strong>Recommendation:</strong> This product is generally suitable for your skin type, but be
-                  cautious with retinol and glycolic acid. Consider patch testing before full use.
+
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <Info className="w-5 h-5 text-blue-500 mr-2" />
+                        <h3 className="font-medium text-blue-800">How to Use</h3>
+                      </div>
+                      <p className="text-sm text-blue-700">{analysis.how_to_use}</p>
+                    </div>
+
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <Info className="w-5 h-5 text-purple-500 mr-2" />
+                        <h3 className="font-medium text-purple-800">Mechanism of Action</h3>
+                      </div>
+                      <p className="text-sm text-purple-700">{analysis.mechanism_of_action}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-500 mr-2" />
+                        <h3 className="font-medium text-orange-800">Safety Usage Limit</h3>
+                      </div>
+                      <p className="text-sm text-orange-700">{analysis.safety_usage_limit}</p>
+                    </div>
+
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
+                        <h3 className="font-medium text-red-800">Side Effects</h3>
+                      </div>
+                      <p className="text-sm text-red-700">{analysis.side_effects}</p>
+                    </div>
+
+                    <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 text-teal-500 mr-2" />
+                        <h3 className="font-medium text-teal-800">Suitable Skin Types</h3>
+                      </div>
+                      <p className="text-sm text-teal-700">{analysis.suitable_skin_types}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -242,57 +247,37 @@ export default function IngredientChecker() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Search */}
+          {/* Popular Ingredients */}
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-2">Quick Search</h3>
-              <p className="text-gray-600 mb-4">Search for specific ingredients</p>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <input
-                  className="w-full border rounded px-3 py-2 pl-10"
-                  placeholder="Search ingredients..."
-                  value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                />
-              </div>
+              <h3 className="text-lg font-semibold mb-4">Popular Ingredients</h3>
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Recent Searches</h4>
-                <div className="flex flex-wrap gap-2">
-                  {recentSearches.map((search, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 rounded border border-teal-200 bg-teal-50 text-teal-700 cursor-pointer hover:bg-teal-100"
-                      onClick={() => setSearchQuery(search)}
-                    >
-                      {search}
-                    </span>
-                  ))}
-                </div>
+                {popularIngredients.map((ing, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setIngredient(ing)}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-gray-700">{ing}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </Card>
 
-          {/* Popular Ingredients */}
+          {/* Recent Searches */}
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-2">Trending Ingredients</h3>
-              <p className="text-gray-600 mb-4">Most searched ingredients this week</p>
-              <div className="space-y-3">
-                {popularIngredients.map((ingredient, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{ingredient.name}</p>
-                      <p className="text-xs text-gray-500">{ingredient.searches} searches</p>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      {ingredient.trend === "up" ? (
-                        <ThumbsUp className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <ThumbsDown className="w-4 h-4 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
+              <h3 className="text-lg font-semibold mb-4">Recent Searches</h3>
+              <div className="space-y-2">
+                {recentSearches.map((search, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setIngredient(search)}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-sm text-gray-700">{search}</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -301,13 +286,13 @@ export default function IngredientChecker() {
           {/* Safety Tips */}
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-2">Safety Tips</h3>
+              <h3 className="text-lg font-semibold mb-4">Safety Tips</h3>
               <div className="space-y-2 text-sm text-gray-600">
-                <p>• Always patch test new products</p>
-                <p>• Introduce actives gradually</p>
-                <p>• Check for allergens in your profile</p>
+                <p>• Always patch test new ingredients</p>
+                <p>• Start with lower concentrations</p>
+                <p>• Check for ingredient interactions</p>
                 <p>• Consult a dermatologist for concerns</p>
-                <p>• Read full ingredient lists carefully</p>
+                <p>• Read product labels carefully</p>
               </div>
             </div>
           </Card>
