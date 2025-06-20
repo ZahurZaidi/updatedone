@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import LoginForm from '../components/auth/LoginForm';
 import SignupForm from '../components/auth/SignupForm';
+import EnvironmentBanner from '../components/common/EnvironmentBanner';
 import { useAuth } from '../context/AuthContext';
 
 const AuthPage: React.FC = () => {
@@ -19,6 +20,7 @@ const AuthPage: React.FC = () => {
       
       <main className="flex-grow flex items-center justify-center py-20 bg-skin-light bg-gradient-to-br from-primary-50 via-transparent to-secondary-50">
         <div className="container mx-auto px-4bg-skin-light ">
+          <EnvironmentBanner />
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-xl shadow-soft overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2">

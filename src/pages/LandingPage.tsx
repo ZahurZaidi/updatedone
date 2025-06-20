@@ -5,6 +5,7 @@ import Faq from '../components/landing/Faq';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import HowItWorks from '../components/landing/HowItWorks';
+import EnvironmentBanner from '../components/common/EnvironmentBanner';
 import Button from '../components/common/Button';
 import { Link } from 'react-router-dom';
 
@@ -14,6 +15,10 @@ const LandingPage: React.FC = () => {
       <Header />
       
       <main className="flex-grow">
+        <div className="container mx-auto px-4 pt-20">
+          <EnvironmentBanner />
+        </div>
+        
         <Hero />
         <HowItWorks />
         <Features />
