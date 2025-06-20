@@ -28,7 +28,8 @@ class AuthService {
         email,
         password,
         options: {
-          data: userData
+          data: userData,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
@@ -41,7 +42,8 @@ class AuthService {
 
       return { user: data.user, session: data.session };
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('SignUp error:', error);
+      throw new Error(error.message || 'Failed to sign up');
     }
   }
 
@@ -61,7 +63,8 @@ class AuthService {
 
       return { user: data.user, session: data.session };
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('SignIn error:', error);
+      throw new Error(error.message || 'Failed to sign in');
     }
   }
 
@@ -80,17 +83,21 @@ class AuthService {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('SignOut error:', error);
+      throw new Error(error.message || 'Failed to sign out');
     }
   }
 
   // Google OAuth - Fixed redirect configuration
   async signInWithGoogle() {
     try {
+      const redirectUrl = window.location.origin + '/auth/callback';
+      console.log('Google OAuth redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -98,10 +105,15 @@ class AuthService {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+      }
+      
       return data;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Google sign in error:', error);
+      throw new Error(error.message || 'Failed to sign in with Google');
     }
   }
 
@@ -114,7 +126,8 @@ class AuthService {
 
       if (error) throw error;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Reset password error:', error);
+      throw new Error(error.message || 'Failed to send reset email');
     }
   }
 
@@ -126,7 +139,8 @@ class AuthService {
 
       if (error) throw error;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Update password error:', error);
+      throw new Error(error.message || 'Failed to update password');
     }
   }
 
@@ -138,12 +152,16 @@ class AuthService {
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: user.email
+        email: user.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
       if (error) throw error;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Resend verification error:', error);
+      throw new Error(error.message || 'Failed to resend verification email');
     }
   }
 
@@ -156,7 +174,11 @@ class AuthService {
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
+      
       return data;
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
@@ -176,7 +198,8 @@ class AuthService {
       if (error) throw error;
       return data;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Update profile error:', error);
+      throw new Error(error.message || 'Failed to update profile');
     }
   }
 
@@ -201,7 +224,8 @@ class AuthService {
 
       return data.publicUrl;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Upload avatar error:', error);
+      throw new Error(error.message || 'Failed to upload avatar');
     }
   }
 
@@ -218,7 +242,9 @@ class AuthService {
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating session record:', error);
+      }
     } catch (error: any) {
       console.error('Error creating session record:', error);
     }
@@ -236,7 +262,8 @@ class AuthService {
       if (error) throw error;
       return data;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Get sessions error:', error);
+      throw new Error(error.message || 'Failed to get sessions');
     }
   }
 
@@ -249,7 +276,8 @@ class AuthService {
 
       if (error) throw error;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Revoke session error:', error);
+      throw new Error(error.message || 'Failed to revoke session');
     }
   }
 
@@ -259,6 +287,7 @@ class AuthService {
       const { data: { user } } = await supabase.auth.getUser();
       return user;
     } catch (error) {
+      console.error('Get current user error:', error);
       return null;
     }
   }
@@ -268,6 +297,7 @@ class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       return session;
     } catch (error) {
+      console.error('Get current session error:', error);
       return null;
     }
   }
@@ -292,7 +322,8 @@ class AuthService {
       if (error) throw error;
       return data;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Link account error:', error);
+      throw new Error(error.message || 'Failed to link account');
     }
   }
 
@@ -305,7 +336,8 @@ class AuthService {
       if (error) throw error;
       return data;
     } catch (error: any) {
-      throw new AuthError(error.message);
+      console.error('Unlink account error:', error);
+      throw new Error(error.message || 'Failed to unlink account');
     }
   }
 }

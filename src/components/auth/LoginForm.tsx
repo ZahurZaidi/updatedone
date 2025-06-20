@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -18,6 +18,30 @@ const LoginForm: React.FC = () => {
   
   const { signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check for error in URL params
+  React.useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      switch (urlError) {
+        case 'oauth_failed':
+          setError('Google sign-in failed. Please try again.');
+          break;
+        case 'auth_callback_failed':
+          setError('Authentication callback failed. Please try again.');
+          break;
+        case 'session_failed':
+          setError('Failed to establish session. Please try again.');
+          break;
+        case 'unexpected_error':
+          setError('An unexpected error occurred. Please try again.');
+          break;
+        default:
+          setError('Authentication failed. Please try again.');
+      }
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +52,8 @@ const LoginForm: React.FC = () => {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to sign in');
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +67,8 @@ const LoginForm: React.FC = () => {
       await resetPassword(resetEmail);
       setResetSent(true);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Reset password error:', err);
+      setError(err.message || 'Failed to send reset email');
     }
   };
 

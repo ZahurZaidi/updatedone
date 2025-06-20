@@ -35,13 +35,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log('Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-          await checkAssessmentStatus(session.user.id);
+        if (error) {
+          console.error('Error getting initial session:', error);
+        } else {
+          console.log('Initial session:', session?.user?.email || 'No session');
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await loadUserProfile(session.user.id);
+            await checkAssessmentStatus(session.user.id);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -55,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('Auth state changed:', event, session?.user?.email || 'No user');
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -77,7 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('Loading user profile for:', userId);
       const userProfile = await authService.getUserProfile(userId);
+      console.log('User profile loaded:', userProfile?.email || 'No profile');
       setProfile(userProfile);
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -94,9 +103,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data && !error) {
         setHasCompletedAssessment(true);
+      } else {
+        setHasCompletedAssessment(false);
       }
     } catch (error) {
       console.error('Error checking assessment status:', error);
+      setHasCompletedAssessment(false);
     }
   };
 
@@ -105,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       await authService.signUp(email, password, userData);
     } catch (error: any) {
+      console.error('SignUp error in context:', error);
       throw new Error(error.message || 'Failed to sign up');
     } finally {
       setLoading(false);
@@ -116,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       await authService.signIn(email, password);
     } catch (error: any) {
+      console.error('SignIn error in context:', error);
       throw new Error(error.message || 'Failed to sign in');
     } finally {
       setLoading(false);
@@ -129,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Note: Don't set loading to false here as the redirect will handle the state
     } catch (error: any) {
       setLoading(false);
+      console.error('Google sign in error in context:', error);
       throw new Error(error.message || 'Failed to sign in with Google');
     }
   };
@@ -138,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       await authService.signOut();
     } catch (error: any) {
+      console.error('SignOut error in context:', error);
       throw new Error(error.message || 'Failed to sign out');
     } finally {
       setLoading(false);
@@ -148,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.resetPassword(email);
     } catch (error: any) {
+      console.error('Reset password error in context:', error);
       throw new Error(error.message || 'Failed to send reset email');
     }
   };
@@ -156,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.updatePassword(newPassword);
     } catch (error: any) {
+      console.error('Update password error in context:', error);
       throw new Error(error.message || 'Failed to update password');
     }
   };
@@ -167,6 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedProfile = await authService.updateUserProfile(user.id, updates);
       setProfile(updatedProfile);
     } catch (error: any) {
+      console.error('Update profile error in context:', error);
       throw new Error(error.message || 'Failed to update profile');
     }
   };
@@ -179,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await refreshProfile();
       return avatarUrl;
     } catch (error: any) {
+      console.error('Upload avatar error in context:', error);
       throw new Error(error.message || 'Failed to upload avatar');
     }
   };
@@ -187,6 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.resendEmailVerification();
     } catch (error: any) {
+      console.error('Resend verification error in context:', error);
       throw new Error(error.message || 'Failed to resend verification email');
     }
   };
