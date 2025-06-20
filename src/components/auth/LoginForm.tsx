@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, Eye, EyeOff, TestTube } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { useAuth } from '../../context/AuthContext';
 import GoogleSignInButton from './GoogleSignInButton';
-import { authService } from '../../lib/auth';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -55,28 +54,6 @@ const LoginForm: React.FC = () => {
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to sign in');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestLogin = async () => {
-    setError('');
-    setIsLoading(true);
-    
-    try {
-      // Use test credentials
-      await signIn('demo@carecanvas.app', 'demo123456');
-      navigate('/dashboard');
-    } catch (err: any) {
-      // If test user doesn't exist, try to create it
-      try {
-        await authService.createTestUser();
-        navigate('/dashboard');
-      } catch (createErr: any) {
-        console.error('Test login error:', createErr);
-        setError('Demo login failed. Please try manual login.');
-      }
     } finally {
       setIsLoading(false);
     }
@@ -175,25 +152,6 @@ const LoginForm: React.FC = () => {
           <span className="text-sm text-error-700">{error}</span>
         </div>
       )}
-
-      {/* Demo Login Button */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-        <div className="flex items-center mb-2">
-          <TestTube className="h-5 w-5 text-blue-500 mr-2" />
-          <span className="text-sm font-medium text-blue-800">Demo Mode</span>
-        </div>
-        <p className="text-sm text-blue-700 mb-3">
-          Try the app with demo credentials (no registration required)
-        </p>
-        <Button
-          type="button"
-          onClick={handleTestLogin}
-          disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700"
-        >
-          Login as Demo User
-        </Button>
-      </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
@@ -268,15 +226,6 @@ const LoginForm: React.FC = () => {
           <Link to="/auth/signup" className="font-medium text-primary-600 hover:text-primary-500">
             Sign up
           </Link>
-        </p>
-      </div>
-
-      {/* Test Credentials Info */}
-      <div className="mt-6 p-3 bg-gray-50 rounded-md">
-        <p className="text-xs text-gray-600 text-center">
-          <strong>Test Credentials:</strong><br />
-          Email: demo@carecanvas.app<br />
-          Password: demo123456
         </p>
       </div>
     </div>

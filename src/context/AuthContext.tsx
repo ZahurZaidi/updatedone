@@ -20,6 +20,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   hasCompletedAssessment: boolean;
   refreshProfile: () => Promise<void>;
+  refreshAssessmentStatus: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,20 +96,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAssessmentStatus = async (userId: string) => {
     try {
+      console.log('Checking assessment status for user:', userId);
       const { data, error } = await supabase
         .from('skin_assessments')
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
 
+      console.log('Assessment check result:', { data, error });
+
       if (data && !error) {
+        console.log('User has completed assessment');
         setHasCompletedAssessment(true);
       } else {
+        console.log('User has not completed assessment');
         setHasCompletedAssessment(false);
       }
     } catch (error) {
       console.error('Error checking assessment status:', error);
       setHasCompletedAssessment(false);
+    }
+  };
+
+  const refreshAssessmentStatus = async () => {
+    if (user) {
+      await checkAssessmentStatus(user.id);
     }
   };
 
@@ -237,6 +249,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         hasCompletedAssessment,
         refreshProfile,
+        refreshAssessmentStatus,
       }}
     >
       {children}

@@ -14,7 +14,7 @@ const SkinAssessment: React.FC = () => {
   const [lifestyleAnswers, setLifestyleAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshAssessmentStatus } = useAuth();
 
   const currentQuestions = currentSection === 'skin' ? skinAssessmentQuestions : lifestyleAssessmentQuestions;
   const totalQuestions = currentQuestions.length;
@@ -79,16 +79,31 @@ const SkinAssessment: React.FC = () => {
         }
       };
 
-      const { error } = await supabase
+      console.log('Submitting assessment data:', assessmentData);
+
+      const { data, error } = await supabase
         .from('skin_assessments')
-        .insert([assessmentData]);
+        .insert([assessmentData])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving assessment:', error);
+        throw error;
+      }
 
-      // Update user context with skin assessment completion
-      navigate('/dashboard');
+      console.log('Assessment saved successfully:', data);
+
+      // Refresh assessment status in context
+      await refreshAssessmentStatus();
+
+      // Navigate to dashboard
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Error saving assessment:', error);
+      // Show error to user but don't prevent navigation
+      alert('There was an issue saving your assessment, but you can continue to the dashboard.');
+      navigate('/dashboard', { replace: true });
     } finally {
       setIsSubmitting(false);
     }

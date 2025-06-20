@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import FacialAnalysis from '../components/dashboard/FacialAnalysis';
 import IngredientChecker from '../components/dashboard/IngredientChecker';
 import RoutineGenerator from '../components/dashboard/RoutineGenerator';
+import ProgressTracker from '../components/dashboard/ProgressTracker';
+import QuickFix from '../components/dashboard/QuickFix';
 import Settings from '../components/dashboard/Settings';
 
 const DashboardPage: React.FC = () => {
@@ -27,7 +29,7 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Show skin assessment if not completed
+  // Show skin assessment if not completed (but allow access to assessment page)
   if (!hasCompletedAssessment && !location.pathname.includes('/assessment')) {
     return <Navigate to="/dashboard/assessment" replace />;
   }
@@ -44,6 +46,8 @@ const DashboardPage: React.FC = () => {
             <Route path="/analysis" element={<FacialAnalysis />} />
             <Route path="/ingredients" element={<IngredientChecker />} />
             <Route path="/routine" element={<RoutineGenerator />} />
+            <Route path="/progress" element={<ProgressTracker />} />
+            <Route path="/quick-fix" element={<QuickFix />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
