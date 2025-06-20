@@ -2,15 +2,7 @@ import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
 import { Search, Loader2, Info, AlertTriangle, CheckCircle, Star } from "lucide-react"
-
-interface IngredientAnalysis {
-  benefits: string;
-  safety_usage_limit: string;
-  side_effects: string;
-  suitable_skin_types: string;
-  how_to_use: string;
-  mechanism_of_action: string;
-}
+import { analyzeIngredient, type IngredientAnalysis } from "../../utils/geminiApi"
 
 export default function IngredientChecker() {
   const [ingredient, setIngredient] = useState("")
@@ -25,7 +17,7 @@ export default function IngredientChecker() {
 
   const recentSearches = ["Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C"]
 
-  const analyzeIngredient = async () => {
+  const handleAnalyzeIngredient = async () => {
     if (!ingredient.trim()) return;
     
     setIsAnalyzing(true);
@@ -33,133 +25,15 @@ export default function IngredientChecker() {
     setAnalysis(null);
     
     try {
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyC-ytoJBf783rie80fOND1ubAtXqhFuUT4';
-      
-      const prompt = `You are a skincare expert with extensive knowledge about cosmetic ingredients. Analyze the ingredient "${ingredient}" and provide detailed information.
-
-Please respond with a JSON object containing exactly these fields:
-{
-  "benefits": "Detailed benefits of this ingredient for skin",
-  "safety_usage_limit": "Safe usage limits and concentrations",
-  "side_effects": "Potential side effects and precautions",
-  "suitable_skin_types": "Which skin types can safely use this ingredient",
-  "how_to_use": "Instructions on how to properly use this ingredient",
-  "mechanism_of_action": "How this ingredient works on the skin"
-}
-
-Make sure to provide comprehensive, accurate information for each field. If the ingredient is not commonly used in skincare, mention that in the benefits section.`;
-
       console.log('Analyzing ingredient:', ingredient);
-      console.log('Using API key:', GEMINI_API_KEY ? 'Present' : 'Missing');
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
-      });
-
-      console.log('API Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response data:', data);
-      
-      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-        throw new Error('Invalid response structure from API');
-      }
-
-      const responseText = data.candidates[0].content.parts[0].text;
-      console.log('Raw API response:', responseText);
-      
-      // Try to extract JSON from the response
-      let jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        try {
-          const analysisData = JSON.parse(jsonMatch[0]);
-          
-          // Validate that all required fields are present
-          const requiredFields = ['benefits', 'safety_usage_limit', 'side_effects', 'suitable_skin_types', 'how_to_use', 'mechanism_of_action'];
-          const missingFields = requiredFields.filter(field => !analysisData[field]);
-          
-          if (missingFields.length > 0) {
-            console.warn('Missing fields in response:', missingFields);
-            // Fill missing fields with default values
-            missingFields.forEach(field => {
-              analysisData[field] = 'Information not available in response';
-            });
-          }
-          
-          setAnalysis(analysisData);
-        } catch (parseError) {
-          console.error('JSON parsing error:', parseError);
-          throw new Error('Failed to parse API response as JSON');
-        }
-      } else {
-        // Fallback: try to parse the text response manually
-        console.log('No JSON found, attempting manual parsing...');
-        
-        const fallbackAnalysis: IngredientAnalysis = {
-          benefits: extractSection(responseText, ['benefit', 'advantage', 'good']) || 'Benefits information not available in response',
-          safety_usage_limit: extractSection(responseText, ['safety', 'limit', 'concentration', 'usage']) || 'Safety information not available in response',
-          side_effects: extractSection(responseText, ['side effect', 'caution', 'warning', 'adverse']) || 'Side effects information not available in response',
-          suitable_skin_types: extractSection(responseText, ['skin type', 'suitable', 'appropriate']) || 'Suitable for most skin types (verify with patch test)',
-          how_to_use: extractSection(responseText, ['how to use', 'application', 'instruction', 'apply']) || 'Usage instructions not available in response',
-          mechanism_of_action: extractSection(responseText, ['mechanism', 'how it works', 'action', 'function']) || 'Mechanism information not available in response'
-        };
-        
-        setAnalysis(fallbackAnalysis);
-      }
-    } catch (err) {
+      const result = await analyzeIngredient(ingredient);
+      setAnalysis(result);
+    } catch (err: any) {
       console.error('Error analyzing ingredient:', err);
-      setError(`Failed to analyze ingredient: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(err.message || 'Failed to analyze ingredient. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const extractSection = (text: string, keywords: string[]): string => {
-    const lines = text.split('\n');
-    
-    for (const keyword of keywords) {
-      const startIndex = lines.findIndex(line => 
-        line.toLowerCase().includes(keyword.toLowerCase())
-      );
-      
-      if (startIndex !== -1) {
-        let content = '';
-        for (let i = startIndex; i < Math.min(startIndex + 3, lines.length); i++) {
-          const line = lines[i].trim();
-          if (line && !line.includes(':') && !line.startsWith('-')) {
-            content += line + ' ';
-          }
-        }
-        if (content.trim()) return content.trim();
-      }
-    }
-    
-    // If no specific section found, return first few sentences
-    const sentences = text.split('.').slice(0, 2);
-    return sentences.join('.') + (sentences.length > 1 ? '.' : '');
   };
 
   return (
@@ -195,10 +69,10 @@ Make sure to provide comprehensive, accurate information for each field. If the 
                       placeholder="e.g., Hyaluronic Acid, Niacinamide, Retinol..."
                       value={ingredient}
                       onChange={(e) => setIngredient(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && analyzeIngredient()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAnalyzeIngredient()}
                     />
                     <Button
-                      onClick={analyzeIngredient}
+                      onClick={handleAnalyzeIngredient}
                       disabled={!ingredient.trim() || isAnalyzing}
                       className="bg-gradient-to-r from-teal-500 to-blue-600"
                     >

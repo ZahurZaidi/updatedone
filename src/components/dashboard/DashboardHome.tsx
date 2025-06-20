@@ -5,6 +5,7 @@ import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, 
 import { Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { supabase } from "../../lib/supabase"
+import { generateSkinInsights } from "../../utils/geminiApi"
 
 interface SkinAssessment {
   skin_type: string;
@@ -40,58 +41,18 @@ export default function DashboardHome() {
 
       if (data && !error) {
         setAssessment(data);
-        generateSkinInsights(data);
+        generateInsights(data);
       }
     } catch (error) {
       console.error('Error loading assessment:', error);
     }
   };
 
-  const generateSkinInsights = async (assessmentData: SkinAssessment) => {
+  const generateInsights = async (assessmentData: SkinAssessment) => {
     setIsLoadingInsights(true);
     try {
-      const GEMINI_API_KEY = 'AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ';
-      
-      const prompt = `Based on this skin assessment data, provide personalized insights and recommendations:
-
-Skin Type: ${assessmentData.skin_type}
-Hydration Level: ${assessmentData.hydration_level}
-Assessment Answers: ${JSON.stringify(assessmentData.assessment_answers)}
-
-Please provide:
-1. A brief analysis of their skin condition
-2. Key recommendations for their skin type
-3. Lifestyle factors that might be affecting their skin
-4. 3-4 specific actionable tips
-
-Keep the response concise and friendly, around 150-200 words.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 512,
-          }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          setSkinInsights(data.candidates[0].content.parts[0].text);
-        }
-      }
+      const insights = await generateSkinInsights(assessmentData);
+      setSkinInsights(insights);
     } catch (error) {
       console.error('Error generating insights:', error);
       setSkinInsights("Based on your assessment, we've identified your skin type and can provide personalized recommendations. Explore the features to get detailed analysis and routines tailored for you.");

@@ -2,22 +2,7 @@ import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
 import { Sparkles, Loader2, Sun, Moon, Clock, Info, AlertTriangle } from "lucide-react"
-
-interface RoutineStep {
-  step: number;
-  product_type: string;
-  product_name: string;
-  instructions: string;
-  timing: string;
-  benefits: string;
-}
-
-interface RoutineResponse {
-  morning_routine: RoutineStep[];
-  evening_routine: RoutineStep[];
-  general_tips: string;
-  frequency_notes: string;
-}
+import { generateSkincareRoutine, type RoutineResponse } from "../../utils/geminiApi"
 
 export default function RoutineGenerator() {
   const [skinType, setSkinType] = useState("")
@@ -40,7 +25,7 @@ export default function RoutineGenerator() {
     )
   }
 
-  const generateRoutine = async () => {
+  const handleGenerateRoutine = async () => {
     if (!skinType || skinConcerns.length === 0) return;
     
     setIsGenerating(true);
@@ -48,169 +33,12 @@ export default function RoutineGenerator() {
     setRoutine(null);
     
     try {
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyC-ytoJBf783rie80fOND1ubAtXqhFuUT4';
-      
-      const prompt = `You are a skincare expert. Create a detailed morning and evening skincare routine for someone with ${skinType} skin and the following concerns: ${skinConcerns.join(', ')}.
-
-Please provide a comprehensive routine with specific product types, application instructions, timing, and benefits. Format your response as a JSON object with this exact structure:
-
-{
-  "morning_routine": [
-    {
-      "step": 1,
-      "product_type": "Cleanser",
-      "product_name": "Gentle Foaming Cleanser",
-      "instructions": "Apply to damp skin, massage gently for 30 seconds, rinse with lukewarm water",
-      "timing": "5-10 minutes",
-      "benefits": "Removes overnight buildup without stripping skin"
-    }
-  ],
-  "evening_routine": [
-    {
-      "step": 1,
-      "product_type": "Oil Cleanser",
-      "product_name": "Cleansing Oil",
-      "instructions": "Apply to dry skin, massage for 1 minute, add water to emulsify, rinse",
-      "timing": "2-3 minutes",
-      "benefits": "Removes makeup and sunscreen effectively"
-    }
-  ],
-  "general_tips": "General advice for this skin type and concerns",
-  "frequency_notes": "How often to use certain products"
-}
-
-Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include specific timing and detailed instructions.`;
-
       console.log('Generating routine for:', { skinType, skinConcerns });
-      console.log('Using API key:', GEMINI_API_KEY ? 'Present' : 'Missing');
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          }
-        })
-      });
-
-      console.log('API Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response data:', data);
-      
-      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-        throw new Error('Invalid response structure from API');
-      }
-
-      const responseText = data.candidates[0].content.parts[0].text;
-      console.log('Raw API response:', responseText);
-      
-      // Try to extract JSON from the response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const routineData = JSON.parse(jsonMatch[0]);
-          
-          // Validate the structure
-          if (!routineData.morning_routine || !routineData.evening_routine) {
-            throw new Error('Invalid routine structure in response');
-          }
-          
-          // Ensure all required fields are present
-          if (!routineData.general_tips) {
-            routineData.general_tips = "Follow this routine consistently for best results. Always patch test new products.";
-          }
-          if (!routineData.frequency_notes) {
-            routineData.frequency_notes = "Use active ingredients gradually and adjust frequency based on skin tolerance.";
-          }
-          
-          setRoutine(routineData);
-        } catch (parseError) {
-          console.error('JSON parsing error:', parseError);
-          throw new Error('Failed to parse routine data from API response');
-        }
-      } else {
-        // Fallback routine if JSON parsing fails
-        console.log('No JSON found, creating fallback routine...');
-        const fallbackRoutine: RoutineResponse = {
-          morning_routine: [
-            {
-              step: 1,
-              product_type: "Cleanser",
-              product_name: "Gentle Cleanser",
-              instructions: "Apply to damp skin, massage gently, rinse with lukewarm water",
-              timing: "1-2 minutes",
-              benefits: "Removes overnight buildup"
-            },
-            {
-              step: 2,
-              product_type: "Moisturizer",
-              product_name: "Lightweight Moisturizer",
-              instructions: "Apply to clean, damp skin",
-              timing: "1 minute",
-              benefits: "Hydrates and protects skin"
-            },
-            {
-              step: 3,
-              product_type: "Sunscreen",
-              product_name: "Broad Spectrum SPF 30+",
-              instructions: "Apply generously to face and neck",
-              timing: "1 minute",
-              benefits: "Protects from UV damage"
-            }
-          ],
-          evening_routine: [
-            {
-              step: 1,
-              product_type: "Cleanser",
-              product_name: "Gentle Cleanser",
-              instructions: "Apply to damp skin, massage gently, rinse with lukewarm water",
-              timing: "1-2 minutes",
-              benefits: "Removes daily buildup"
-            },
-            {
-              step: 2,
-              product_type: "Treatment",
-              product_name: "Targeted Treatment",
-              instructions: "Apply to specific areas of concern",
-              timing: "1 minute",
-              benefits: "Addresses specific skin concerns"
-            },
-            {
-              step: 3,
-              product_type: "Moisturizer",
-              product_name: "Night Moisturizer",
-              instructions: "Apply to clean skin",
-              timing: "1 minute",
-              benefits: "Nourishes and repairs overnight"
-            }
-          ],
-          general_tips: `For ${skinType} skin with ${skinConcerns.join(', ')}, consistency is key. Start slowly with new products and always use sunscreen during the day.`,
-          frequency_notes: "Use active ingredients 2-3 times per week initially, then increase as tolerated."
-        };
-        
-        setRoutine(fallbackRoutine);
-      }
-    } catch (err) {
+      const result = await generateSkincareRoutine(skinType, skinConcerns);
+      setRoutine(result);
+    } catch (err: any) {
       console.error('Error generating routine:', err);
-      setError(`Failed to generate routine: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(err.message || 'Failed to generate routine. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -276,7 +104,7 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
                 </div>
 
                 <Button
-                  onClick={generateRoutine}
+                  onClick={handleGenerateRoutine}
                   disabled={!skinType || skinConcerns.length === 0 || isGenerating}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-600"
                 >
