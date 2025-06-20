@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
+import AuthCallback from './components/auth/AuthCallback';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
 const App: React.FC = () => {
@@ -12,7 +14,15 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth/:type" element={<AuthPage />} />
-          <Route path="/dashboard/*" element={<DashboardPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route 
+            path="/dashboard/*" 
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="/features" element={<LandingPage />} />
           <Route path="/faq" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

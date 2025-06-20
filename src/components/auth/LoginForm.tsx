@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { useAuth } from '../../context/AuthContext';
+import GoogleSignInButton from './GoogleSignInButton';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  
+  const { signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,18 +25,91 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      await signIn(email, password);
       navigate('/dashboard');
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to log in');
-      }
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    try {
+      await resetPassword(resetEmail);
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="max-w-md w-full mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-display font-bold text-gray-900">Reset Password</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your email address and we'll send you a reset link
+          </p>
+        </div>
+        
+        {resetSent ? (
+          <div className="text-center space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-700">
+                Password reset email sent! Check your inbox and follow the instructions.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowForgotPassword(false)}
+              className="w-full"
+            >
+              Back to Login
+            </Button>
+          </div>
+        ) : (
+          <>
+            {error && (
+              <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-md flex items-center">
+                <AlertCircle className="h-5 w-5 text-error-500 mr-2" />
+                <span className="text-sm text-error-700">{error}</span>
+              </div>
+            )}
+            
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <Input
+                id="reset-email"
+                type="email"
+                label="Email address"
+                placeholder="Enter your email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                leftIcon={<Mail className="h-5 w-5 text-gray-400" />}
+              />
+              
+              <Button type="submit" className="w-full">
+                Send Reset Link
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full"
+              >
+                Back to Login
+              </Button>
+            </form>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md w-full mx-auto">
@@ -61,22 +140,33 @@ const LoginForm: React.FC = () => {
         />
         
         <div>
-          <div className="flex items-center justify-between">
-            <Input
-              id="password"
-              type="password"
-              label="Password"
-              placeholder="Your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              leftIcon={<Lock className="h-5 w-5 text-gray-400" />}
-            />
-          </div>
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            label="Password"
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            leftIcon={<Lock className="h-5 w-5 text-gray-400" />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            }
+          />
           <div className="text-right mt-1">
-            <Link to="/auth/forgot-password" className="text-xs text-primary-600 hover:text-primary-500">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-xs text-primary-600 hover:text-primary-500"
+            >
               Forgot your password?
-            </Link>
+            </button>
           </div>
         </div>
         
@@ -88,6 +178,21 @@ const LoginForm: React.FC = () => {
           Log In  
         </Button>
       </form>
+      
+      <div className="mt-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <GoogleSignInButton />
+        </div>
+      </div>
       
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-600">
