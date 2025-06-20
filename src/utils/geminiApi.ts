@@ -244,6 +244,21 @@ Provide a comprehensive response in JSON format:
 
         const result = { ...defaults, ...routineData };
         
+        // Fix: Ensure weekly_schedule is always a string
+        if (typeof result.weekly_schedule === 'object' && result.weekly_schedule !== null) {
+          // Convert object to string format
+          const scheduleEntries = Object.entries(result.weekly_schedule);
+          if (scheduleEntries.length > 0) {
+            result.weekly_schedule = scheduleEntries
+              .map(([day, schedule]) => `${day}: ${schedule}`)
+              .join('. ');
+          } else {
+            result.weekly_schedule = defaults.weekly_schedule;
+          }
+        } else if (typeof result.weekly_schedule !== 'string') {
+          result.weekly_schedule = defaults.weekly_schedule;
+        }
+        
         // Ensure optional field exists on all steps
         result.morning_routine = result.morning_routine.map((step: any) => ({
           ...step,
