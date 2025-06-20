@@ -340,6 +340,37 @@ class AuthService {
       throw new Error(error.message || 'Failed to unlink account');
     }
   }
+
+  // Demo/Test Methods
+  async createTestUser() {
+    try {
+      // Create a test user for demo purposes
+      const testEmail = 'demo@carecanvas.app';
+      const testPassword = 'demo123456';
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: testEmail,
+        password: testPassword,
+        options: {
+          data: {
+            full_name: 'Demo User',
+            username: 'demouser'
+          }
+        }
+      });
+
+      if (error && error.message.includes('already registered')) {
+        // User already exists, try to sign in
+        return await this.signIn(testEmail, testPassword);
+      }
+
+      if (error) throw error;
+      return { user: data.user, session: data.session };
+    } catch (error: any) {
+      console.error('Create test user error:', error);
+      throw new Error(error.message || 'Failed to create test user');
+    }
+  }
 }
 
 export const authService = new AuthService();
