@@ -55,6 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -124,10 +126,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       await authService.signInWithGoogle();
+      // Note: Don't set loading to false here as the redirect will handle the state
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to sign in with Google');
-    } finally {
       setLoading(false);
+      throw new Error(error.message || 'Failed to sign in with Google');
     }
   };
 
