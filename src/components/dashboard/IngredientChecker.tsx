@@ -1,7 +1,7 @@
 import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { Search, Loader2, Info, AlertTriangle, CheckCircle, Star } from "lucide-react"
+import { Search, Loader2, Info, AlertTriangle, CheckCircle, Star, Award, Shield } from "lucide-react"
 import { analyzeIngredient, type IngredientAnalysis } from "../../utils/geminiApi"
 
 export default function IngredientChecker() {
@@ -12,7 +12,8 @@ export default function IngredientChecker() {
 
   const popularIngredients = [
     "Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C", "Salicylic Acid",
-    "Glycolic Acid", "Ceramides", "Peptides", "Alpha Arbutin", "Azelaic Acid"
+    "Glycolic Acid", "Ceramides", "Peptides", "Alpha Arbutin", "Azelaic Acid",
+    "Caffeine", "Kojic Acid"
   ]
 
   const recentSearches = ["Hyaluronic Acid", "Niacinamide", "Retinol", "Vitamin C"]
@@ -34,6 +35,20 @@ export default function IngredientChecker() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const getRatingColor = (rating: number) => {
+    if (rating >= 8) return 'text-green-600';
+    if (rating >= 6) return 'text-yellow-600';
+    if (rating >= 4) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
+  const getRatingBadge = (rating: number) => {
+    if (rating >= 8) return { text: 'Excellent', color: 'bg-green-100 text-green-800' };
+    if (rating >= 6) return { text: 'Good', color: 'bg-yellow-100 text-yellow-800' };
+    if (rating >= 4) return { text: 'Fair', color: 'bg-orange-100 text-orange-800' };
+    return { text: 'Poor', color: 'bg-red-100 text-red-800' };
   };
 
   return (
@@ -104,66 +119,98 @@ export default function IngredientChecker() {
             <Card className="border-0 shadow-md">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold">Analysis Results for "{ingredient}"</h2>
-                  <div className="flex items-center space-x-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                    ))}
+                  <div>
+                    <h2 className="text-xl font-semibold">Analysis Results for "{ingredient}"</h2>
+                    <div className="flex items-center mt-2 space-x-3">
+                      <div className="flex items-center space-x-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-4 h-4 ${i < Math.floor(analysis.rating / 2) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                        <span className={`font-semibold ${getRatingColor(analysis.rating)}`}>
+                          {analysis.rating}/10
+                        </span>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRatingBadge(analysis.rating).color}`}>
+                        {getRatingBadge(analysis.rating).text}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                        {analysis.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-6 h-6 text-blue-500" />
+                    <Shield className="w-6 h-6 text-green-500" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                        <h3 className="font-medium text-green-800">Benefits</h3>
+                        <h3 className="font-medium text-green-800">Benefits & Effects</h3>
                       </div>
-                      <p className="text-sm text-green-700">{analysis.benefits}</p>
+                      <p className="text-sm text-green-700 leading-relaxed">{analysis.benefits}</p>
                     </div>
 
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <Info className="w-5 h-5 text-blue-500 mr-2" />
                         <h3 className="font-medium text-blue-800">How to Use</h3>
                       </div>
-                      <p className="text-sm text-blue-700">{analysis.how_to_use}</p>
+                      <p className="text-sm text-blue-700 leading-relaxed">{analysis.how_to_use}</p>
                     </div>
 
                     <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <Info className="w-5 h-5 text-purple-500 mr-2" />
                         <h3 className="font-medium text-purple-800">Mechanism of Action</h3>
                       </div>
-                      <p className="text-sm text-purple-700">{analysis.mechanism_of_action}</p>
+                      <p className="text-sm text-purple-700 leading-relaxed">{analysis.mechanism_of_action}</p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <AlertTriangle className="w-5 h-5 text-orange-500 mr-2" />
-                        <h3 className="font-medium text-orange-800">Safety Usage Limit</h3>
+                        <h3 className="font-medium text-orange-800">Safety & Usage Limits</h3>
                       </div>
-                      <p className="text-sm text-orange-700">{analysis.safety_usage_limit}</p>
+                      <p className="text-sm text-orange-700 leading-relaxed">{analysis.safety_usage_limit}</p>
                     </div>
 
                     <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-                        <h3 className="font-medium text-red-800">Side Effects</h3>
+                        <h3 className="font-medium text-red-800">Potential Side Effects</h3>
                       </div>
-                      <p className="text-sm text-red-700">{analysis.side_effects}</p>
+                      <p className="text-sm text-red-700 leading-relaxed">{analysis.side_effects}</p>
                     </div>
 
                     <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-3">
                         <CheckCircle className="w-5 h-5 text-teal-500 mr-2" />
                         <h3 className="font-medium text-teal-800">Suitable Skin Types</h3>
                       </div>
-                      <p className="text-sm text-teal-700">{analysis.suitable_skin_types}</p>
+                      <p className="text-sm text-teal-700 leading-relaxed">{analysis.suitable_skin_types}</p>
                     </div>
                   </div>
+                </div>
+
+                {/* Professional Summary */}
+                <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h3 className="font-medium text-gray-800 mb-2">Professional Summary</h3>
+                  <p className="text-sm text-gray-700">
+                    This {analysis.category.toLowerCase()} has received a rating of {analysis.rating}/10 based on its 
+                    efficacy, safety profile, and scientific backing. 
+                    {analysis.rating >= 7 && " This ingredient is well-researched and generally considered safe and effective for most users."}
+                    {analysis.rating >= 4 && analysis.rating < 7 && " This ingredient shows promise but may require careful use or have limited research."}
+                    {analysis.rating < 4 && " This ingredient may have safety concerns or limited efficacy data."}
+                  </p>
                 </div>
               </div>
             </Card>
@@ -208,16 +255,77 @@ export default function IngredientChecker() {
             </div>
           </Card>
 
-          {/* Safety Tips */}
+          {/* Enhanced Safety Tips */}
           <Card className="border-0 shadow-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Safety Tips</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>• Always patch test new ingredients</p>
-                <p>• Start with lower concentrations</p>
-                <p>• Check for ingredient interactions</p>
-                <p>• Consult a dermatologist for concerns</p>
-                <p>• Read product labels carefully</p>
+              <h3 className="text-lg font-semibold mb-4">Safety Guidelines</h3>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start">
+                  <Shield className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Always patch test new ingredients on a small skin area first</span>
+                </div>
+                <div className="flex items-start">
+                  <AlertTriangle className="w-4 h-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Start with lower concentrations and gradually increase</span>
+                </div>
+                <div className="flex items-start">
+                  <Info className="w-4 h-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Check for ingredient interactions with current products</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="w-4 h-4 text-teal-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Consult a dermatologist for persistent skin concerns</span>
+                </div>
+                <div className="flex items-start">
+                  <Search className="w-4 h-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Read product labels carefully for concentration levels</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Rating Guide */}
+          <Card className="border-0 shadow-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Rating Guide</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-green-600 font-medium">8-10: Excellent</span>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-yellow-600 font-medium">6-7: Good</span>
+                  <div className="flex">
+                    {[...Array(4)].map((_, i) => (
+                      <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                    ))}
+                    <Star className="w-3 h-3 text-gray-300" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-600 font-medium">4-5: Fair</span>
+                  <div className="flex">
+                    {[...Array(3)].map((_, i) => (
+                      <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                    ))}
+                    {[...Array(2)].map((_, i) => (
+                      <Star key={i} className="w-3 h-3 text-gray-300" />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-600 font-medium">1-3: Poor</span>
+                  <div className="flex">
+                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                    {[...Array(4)].map((_, i) => (
+                      <Star key={i} className="w-3 h-3 text-gray-300" />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
