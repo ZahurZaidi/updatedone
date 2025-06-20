@@ -13,6 +13,7 @@ const SkinAssessment: React.FC = () => {
   const [skinAnswers, setSkinAnswers] = useState<string[]>([]);
   const [lifestyleAnswers, setLifestyleAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string>('');
   const navigate = useNavigate();
   const { user, refreshAssessmentStatus } = useAuth();
 
@@ -20,6 +21,8 @@ const SkinAssessment: React.FC = () => {
   const totalQuestions = currentQuestions.length;
 
   const handleAnswer = (answer: string) => {
+    setError(''); // Clear any previous errors
+    
     if (currentSection === 'skin') {
       const newAnswers = [...skinAnswers];
       newAnswers[currentStep] = answer;
@@ -54,23 +57,60 @@ const SkinAssessment: React.FC = () => {
   };
 
   const getSkinProfile = (answers: string[]) => {
+    // Find matching skin profile based on answers
     for (const entry of skinAssessmentData) {
       if (JSON.stringify(entry.answers) === JSON.stringify(answers)) {
         return { skinType: entry.skin_type, hydration: entry.hydration };
       }
     }
-    return { skinType: 'Unknown', hydration: 'Unknown' };
+    
+    // Fallback logic if no exact match
+    const answerString = answers.join('|').toLowerCase();
+    
+    if (answerString.includes('tight') && answerString.includes('dry')) {
+      return { skinType: 'Dry', hydration: 'Low' };
+    } else if (answerString.includes('oily') && answerString.includes('shiny')) {
+      return { skinType: 'Oily', hydration: 'High' };
+    } else if (answerString.includes('comfortable') && answerString.includes('smooth')) {
+      return { skinType: 'Normal', hydration: 'Good' };
+    } else if (answerString.includes('irritated') || answerString.includes('reaction')) {
+      return { skinType: 'Sensitive', hydration: 'Variable' };
+    } else {
+      return { skinType: 'Combination', hydration: 'Variable' };
+    }
   };
 
   const handleSubmit = async () => {
     if (!user) {
-      console.error('No user found for assessment submission');
+      setError('Please log in to save your assessment');
+      return;
+    }
+
+    // Validate that we have all required answers
+    if (skinAnswers.length !== skinAssessmentQuestions.length) {
+      setError('Please complete all skin assessment questions');
+      return;
+    }
+
+    const requiredLifestyleKeys = lifestyleAssessmentQuestions.map(q => q.key);
+    const answeredLifestyleKeys = Object.keys(lifestyleAnswers);
+    const missingLifestyleAnswers = requiredLifestyleKeys.filter(key => !answeredLifestyleKeys.includes(key));
+    
+    if (missingLifestyleAnswers.length > 0) {
+      setError('Please complete all lifestyle assessment questions');
       return;
     }
     
     setIsSubmitting(true);
+    setError('');
+    
     try {
+      console.log('Starting assessment submission...');
+      console.log('Skin answers:', skinAnswers);
+      console.log('Lifestyle answers:', lifestyleAnswers);
+      
       const { skinType, hydration } = getSkinProfile(skinAnswers);
+      console.log('Determined skin profile:', { skinType, hydration });
       
       const assessmentData = {
         user_id: user.id,
@@ -84,32 +124,65 @@ const SkinAssessment: React.FC = () => {
 
       console.log('Submitting assessment data:', assessmentData);
 
-      const { data, error } = await supabase
+      // First, check if user already has an assessment
+      const { data: existingAssessment, error: checkError } = await supabase
         .from('skin_assessments')
-        .insert([assessmentData])
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing assessment:', checkError);
+        throw new Error('Failed to check existing assessment');
+      }
+
+      let result;
+      if (existingAssessment) {
+        // Update existing assessment
+        console.log('Updating existing assessment...');
+        result = await supabase
+          .from('skin_assessments')
+          .update({
+            skin_type: skinType,
+            hydration_level: hydration,
+            assessment_answers: assessmentData.assessment_answers,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
+      } else {
+        // Insert new assessment
+        console.log('Creating new assessment...');
+        result = await supabase
+          .from('skin_assessments')
+          .insert([assessmentData])
+          .select()
+          .single();
+      }
+
+      const { data, error } = result;
 
       if (error) {
-        console.error('Error saving assessment:', error);
-        throw error;
+        console.error('Database error:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
 
       console.log('Assessment saved successfully:', data);
 
       // Refresh assessment status in context
       await refreshAssessmentStatus();
-
-      // Show success message and navigate
-      alert(`Assessment completed! Your skin type is: ${skinType} with ${hydration} hydration level.`);
+      
+      // Show success message
+      const successMessage = `Assessment completed successfully!\n\nYour Results:\n• Skin Type: ${skinType}\n• Hydration Level: ${hydration}\n\nYou can now access all features of the app!`;
+      alert(successMessage);
       
       // Navigate to dashboard
       navigate('/dashboard', { replace: true });
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error saving assessment:', error);
-      // Show error to user but allow them to continue
-      alert('There was an issue saving your assessment, but you can continue to the dashboard. Please try the assessment again later if needed.');
-      navigate('/dashboard', { replace: true });
+      setError(error.message || 'Failed to save assessment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -155,6 +228,13 @@ const SkinAssessment: React.FC = () => {
             <span>Lifestyle Assessment</span>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* Question Card */}
         <Card className="mb-8 border-0 shadow-lg">
@@ -230,7 +310,7 @@ const SkinAssessment: React.FC = () => {
 
           <Button
             onClick={handleNext}
-            disabled={!canProceed}
+            disabled={!canProceed || isSubmitting}
             isLoading={isSubmitting}
             rightIcon={
               currentStep === totalQuestions - 1 && currentSection === 'lifestyle' ? 
@@ -238,10 +318,23 @@ const SkinAssessment: React.FC = () => {
             }
           >
             {currentStep === totalQuestions - 1 && currentSection === 'lifestyle' 
-              ? (isSubmitting ? 'Completing...' : 'Complete Assessment')
+              ? (isSubmitting ? 'Completing Assessment...' : 'Complete Assessment')
               : 'Next'}
           </Button>
         </div>
+
+        {/* Debug Info (remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 p-4 bg-gray-100 rounded-lg text-xs">
+            <p><strong>Debug Info:</strong></p>
+            <p>Current Section: {currentSection}</p>
+            <p>Current Step: {currentStep + 1}/{totalQuestions}</p>
+            <p>Skin Answers: {skinAnswers.length}/{skinAssessmentQuestions.length}</p>
+            <p>Lifestyle Answers: {Object.keys(lifestyleAnswers).length}/{lifestyleAssessmentQuestions.length}</p>
+            <p>Can Proceed: {canProceed ? 'Yes' : 'No'}</p>
+            <p>User ID: {user?.id || 'Not logged in'}</p>
+          </div>
+        )}
       </div>
     </div>
   );

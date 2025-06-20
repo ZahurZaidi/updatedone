@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Auth loading timeout reached, setting loading to false');
         setLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
 
     // Get initial session
     const getInitialSession = async () => {
@@ -122,16 +122,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAssessmentStatus = async (userId: string) => {
     try {
       console.log('Checking assessment status for user:', userId);
+      
       const { data, error } = await supabase
         .from('skin_assessments')
-        .select('id')
+        .select('id, skin_type, hydration_level, created_at')
         .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       console.log('Assessment check result:', { data, error });
 
       if (data && !error) {
-        console.log('User has completed assessment');
+        console.log('User has completed assessment:', data);
         setHasCompletedAssessment(true);
       } else {
         console.log('User has not completed assessment');
@@ -145,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshAssessmentStatus = async () => {
     if (user) {
+      console.log('Refreshing assessment status for user:', user.id);
       await checkAssessmentStatus(user.id);
     }
   };
