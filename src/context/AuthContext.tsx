@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('skin_assessments')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setHasCompletedAssessment(true);
