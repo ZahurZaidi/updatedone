@@ -26,7 +26,7 @@ const DashboardPage: React.FC = () => {
     });
   }, [isAuthenticated, loading, hasCompletedAssessment, user, location.pathname]);
   
-  // Show loading state only for a reasonable time
+  // Show loading state with timeout
   if (loading) {
     console.log('DashboardPage: Showing loading state');
     return (
@@ -34,6 +34,7 @@ const DashboardPage: React.FC = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 mt-2">This should only take a moment</p>
         </div>
       </div>
     );
@@ -45,23 +46,9 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // If user hasn't completed assessment, only allow access to assessment page
-  if (!hasCompletedAssessment) {
-    console.log('DashboardPage: Assessment not completed');
-    if (location.pathname === '/dashboard/assessment') {
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <SkinAssessment />
-        </div>
-      );
-    }
-    // Redirect to assessment for any other dashboard route
-    console.log('DashboardPage: Redirecting to assessment');
-    return <Navigate to="/dashboard/assessment" replace />;
-  }
+  // Show the dashboard with assessment as the first feature
+  console.log('DashboardPage: Showing dashboard with assessment status:', hasCompletedAssessment);
   
-  // User has completed assessment, show full dashboard
-  console.log('DashboardPage: Showing full dashboard');
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -70,14 +57,13 @@ const DashboardPage: React.FC = () => {
         <main className="pt-6">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
+            <Route path="/assessment" element={<SkinAssessment />} />
             <Route path="/analysis" element={<FacialAnalysis />} />
             <Route path="/ingredients" element={<IngredientChecker />} />
             <Route path="/routine" element={<RoutineGenerator />} />
             <Route path="/progress" element={<ProgressTracker />} />
             <Route path="/quick-fix" element={<QuickFix />} />
             <Route path="/settings" element={<Settings />} />
-            {/* Redirect assessment to dashboard if already completed */}
-            <Route path="/assessment" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>

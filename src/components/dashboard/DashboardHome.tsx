@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles } from "lucide-react"
+import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles, ClipboardList } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { supabase } from "../../lib/supabase"
@@ -17,16 +17,16 @@ interface SkinAssessment {
 }
 
 export default function DashboardHome() {
-  const { user } = useAuth();
+  const { user, hasCompletedAssessment } = useAuth();
   const [assessment, setAssessment] = useState<SkinAssessment | null>(null);
   const [skinInsights, setSkinInsights] = useState<string>("");
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && hasCompletedAssessment) {
       loadAssessmentData();
     }
-  }, [user]);
+  }, [user, hasCompletedAssessment]);
 
   const loadAssessmentData = async () => {
     try {
@@ -100,6 +100,109 @@ Keep the response concise and friendly, around 150-200 words.`;
     }
   };
 
+  // If assessment not completed, show assessment prompt
+  if (!hasCompletedAssessment) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Welcome to CARE CANVAS!</h1>
+            <p className="text-gray-600 mt-1">Let's start by understanding your skin better</p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded inline-flex items-center">
+              <ClipboardList className="w-3 h-3 mr-1" />
+              Assessment Needed
+            </span>
+          </div>
+        </div>
+
+        {/* Assessment Prompt */}
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-primary-50 to-secondary-50">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ClipboardList className="w-10 h-10 text-primary-600" />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Complete Your Skin Assessment
+              </h2>
+              
+              <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
+                To provide you with personalized skincare recommendations, we need to understand your skin type, 
+                concerns, and lifestyle. This assessment takes just 5-10 minutes and will unlock all our features.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-blue-600 font-bold">1</span>
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Skin Analysis</h3>
+                  <p className="text-sm text-gray-600">Answer questions about your skin type and concerns</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-green-600 font-bold">2</span>
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Lifestyle Factors</h3>
+                  <p className="text-sm text-gray-600">Tell us about your daily routine and habits</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-purple-600 font-bold">3</span>
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Get Results</h3>
+                  <p className="text-sm text-gray-600">Receive personalized recommendations and routines</p>
+                </div>
+              </div>
+
+              <Link to="/dashboard/assessment">
+                <Button size="lg" className="bg-gradient-to-r from-primary-600 to-secondary-500">
+                  <ClipboardList className="w-5 h-5 mr-2" />
+                  Start Skin Assessment
+                </Button>
+              </Link>
+
+              <p className="text-sm text-gray-500 mt-4">
+                ⏱️ Takes 5-10 minutes • 🔒 Your data is secure and private
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Feature Preview */}
+        <div className="max-w-4xl mx-auto">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+            What you'll unlock after assessment:
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: Camera, title: "Facial Analysis", desc: "AI-powered skin analysis" },
+              { icon: Search, title: "Ingredient Checker", desc: "Verify product safety" },
+              { icon: Sparkles, title: "Custom Routines", desc: "Personalized skincare plans" },
+              { icon: TrendingUp, title: "Progress Tracking", desc: "Monitor improvements" }
+            ].map((feature, index) => (
+              <Card key={index} className="border-0 shadow-sm opacity-75">
+                <div className="p-4 text-center">
+                  <feature.icon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-700 mb-1">{feature.title}</h4>
+                  <p className="text-xs text-gray-500">{feature.desc}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show full dashboard if assessment is completed
   const quickStats = [
     {
       title: "Skin Type",
@@ -121,37 +224,6 @@ Keep the response concise and friendly, around 150-200 words.`;
       change: "Last updated",
       icon: AlertCircle,
       color: "text-orange-600",
-    },
-  ]
-
-  const recentActivity = [
-    {
-      type: "assessment",
-      title: "Skin assessment completed",
-      description: `Identified as ${assessment?.skin_type || 'Unknown'} skin with ${assessment?.hydration_level || 'Unknown'} hydration`,
-      time: assessment ? new Date(assessment.created_at).toLocaleDateString() : "Not completed",
-      status: "completed",
-    },
-    {
-      type: "routine",
-      title: "Personalized routine available",
-      description: "Custom morning and evening routines ready based on your assessment",
-      time: "Ready now",
-      status: "available",
-    },
-    {
-      type: "ingredient",
-      title: "Ingredient checker ready",
-      description: "Analyze ingredients for compatibility with your skin type",
-      time: "Available",
-      status: "available",
-    },
-    {
-      type: "analysis",
-      title: "Facial analysis available",
-      description: "Upload photos for AI-powered skin analysis",
-      time: "Ready to use",
-      status: "available",
     },
   ]
 
@@ -242,7 +314,7 @@ Keep the response concise and friendly, around 150-200 words.`;
               ) : (
                 <div className="prose prose-sm max-w-none">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {skinInsights || "Complete your skin assessment to get personalized insights and recommendations."}
+                    {skinInsights || "Based on your assessment, we've identified your skin type and can provide personalized recommendations. Explore the features to get detailed analysis and routines tailored for you."}
                   </p>
                 </div>
               )}
@@ -308,31 +380,6 @@ Keep the response concise and friendly, around 150-200 words.`;
                   Get Personalized Routine
                 </Button>
               </Link>
-            </div>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="border-0 shadow-md">
-            <div className="p-6">
-              <div className="flex items-center mb-4">
-                <span className="text-xl font-semibold">Available Features</span>
-              </div>
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        activity.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
-                      }`}></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                      <p className="text-xs text-gray-500 mt-1">{activity.description}</p>
-                      <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </Card>
 

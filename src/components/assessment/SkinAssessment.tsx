@@ -63,7 +63,10 @@ const SkinAssessment: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for assessment submission');
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -97,12 +100,15 @@ const SkinAssessment: React.FC = () => {
       // Refresh assessment status in context
       await refreshAssessmentStatus();
 
+      // Show success message and navigate
+      alert(`Assessment completed! Your skin type is: ${skinType} with ${hydration} hydration level.`);
+      
       // Navigate to dashboard
       navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Error saving assessment:', error);
-      // Show error to user but don't prevent navigation
-      alert('There was an issue saving your assessment, but you can continue to the dashboard.');
+      // Show error to user but allow them to continue
+      alert('There was an issue saving your assessment, but you can continue to the dashboard. Please try the assessment again later if needed.');
       navigate('/dashboard', { replace: true });
     } finally {
       setIsSubmitting(false);
@@ -232,7 +238,7 @@ const SkinAssessment: React.FC = () => {
             }
           >
             {currentStep === totalQuestions - 1 && currentSection === 'lifestyle' 
-              ? 'Complete Assessment' 
+              ? (isSubmitting ? 'Completing...' : 'Complete Assessment')
               : 'Next'}
           </Button>
         </div>

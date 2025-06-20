@@ -34,6 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let loadingTimeout: NodeJS.Timeout;
+
+    // Set a timeout to prevent infinite loading
+    loadingTimeout = setTimeout(() => {
+      if (mounted) {
+        console.log('Auth loading timeout reached, setting loading to false');
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
 
     // Get initial session
     const getInitialSession = async () => {
@@ -59,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error getting initial session:', error);
       } finally {
         if (mounted) {
+          clearTimeout(loadingTimeout);
           setLoading(false);
         }
       }
@@ -84,12 +94,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasCompletedAssessment(false);
         }
         
-        setLoading(false);
+        if (mounted) {
+          clearTimeout(loadingTimeout);
+          setLoading(false);
+        }
       }
     );
 
     return () => {
       mounted = false;
+      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);
