@@ -32,7 +32,23 @@ export default function IngredientChecker() {
     setError("");
     
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ', {
+      const GEMINI_API_KEY = 'AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ';
+      
+      const prompt = `You are a skincare expert with extensive knowledge about cosmetic ingredients. Analyze the ingredient "${ingredient}" and provide detailed information.
+
+Please respond with a JSON object containing exactly these fields:
+{
+  "benefits": "Detailed benefits of this ingredient for skin",
+  "safety_usage_limit": "Safe usage limits and concentrations",
+  "side_effects": "Potential side effects and precautions",
+  "suitable_skin_types": "Which skin types can safely use this ingredient",
+  "how_to_use": "Instructions on how to properly use this ingredient",
+  "mechanism_of_action": "How this ingredient works on the skin"
+}
+
+Make sure to provide comprehensive, accurate information for each field. If the ingredient is not commonly used in skincare, mention that in the benefits section.`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,19 +56,7 @@ export default function IngredientChecker() {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `You have appropriate knowledge about all the beneficial ingredients in the skin care and its effects of curing the skin issues. You exactly know what is the safe quantity per application of every skin care ingredient. You are well aware of the side effects of the ingredients. As we know, different people have different skin types like Oily, Dry, Combination, Normal, Sensitive, so you also are expert in assessing the mentioned skin types and suitable ingredients for it.
-
-You will be given the name or compound of ingredient: "${ingredient}"
-
-Please provide the following information in a structured format:
-- Benefits of using it
-- Safety usage limit
-- Side effects
-- Which skin types can use it
-- How to use it
-- How it works (mechanism of action)
-
-Please format your response as a JSON object with these exact keys: benefits, safety_usage_limit, side_effects, suitable_skin_types, how_to_use, mechanism_of_action`
+              text: prompt
             }]
           }],
           generationConfig: {
@@ -64,54 +68,85 @@ Please format your response as a JSON object with these exact keys: benefits, sa
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
       const data = await response.json();
       
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        const responseText = data.candidates[0].content.parts[0].text;
-        
-        // Try to extract JSON from the response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response structure from API');
+      }
+
+      const responseText = data.candidates[0].content.parts[0].text;
+      console.log('Raw API response:', responseText);
+      
+      // Try to extract JSON from the response
+      let jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        try {
           const analysisData = JSON.parse(jsonMatch[0]);
+          
+          // Validate that all required fields are present
+          const requiredFields = ['benefits', 'safety_usage_limit', 'side_effects', 'suitable_skin_types', 'how_to_use', 'mechanism_of_action'];
+          const missingFields = requiredFields.filter(field => !analysisData[field]);
+          
+          if (missingFields.length > 0) {
+            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+          }
+          
           setAnalysis(analysisData);
-        } else {
-          // Fallback: parse the text response manually
-          setAnalysis({
-            benefits: extractSection(responseText, 'benefits') || 'Benefits information not available',
-            safety_usage_limit: extractSection(responseText, 'safety') || 'Safety information not available',
-            side_effects: extractSection(responseText, 'side effects') || 'Side effects information not available',
-            suitable_skin_types: extractSection(responseText, 'skin types') || 'Suitable for most skin types',
-            how_to_use: extractSection(responseText, 'how to use') || 'Usage instructions not available',
-            mechanism_of_action: extractSection(responseText, 'mechanism') || 'Mechanism information not available'
-          });
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError);
+          throw new Error('Failed to parse API response as JSON');
         }
       } else {
-        throw new Error('Invalid response from API');
+        // Fallback: try to parse the text response manually
+        console.log('No JSON found, attempting manual parsing...');
+        
+        const fallbackAnalysis: IngredientAnalysis = {
+          benefits: extractSection(responseText, ['benefit', 'advantage', 'good']) || 'Benefits information not available in response',
+          safety_usage_limit: extractSection(responseText, ['safety', 'limit', 'concentration', 'usage']) || 'Safety information not available in response',
+          side_effects: extractSection(responseText, ['side effect', 'caution', 'warning', 'adverse']) || 'Side effects information not available in response',
+          suitable_skin_types: extractSection(responseText, ['skin type', 'suitable', 'appropriate']) || 'Suitable for most skin types (verify with patch test)',
+          how_to_use: extractSection(responseText, ['how to use', 'application', 'instruction', 'apply']) || 'Usage instructions not available in response',
+          mechanism_of_action: extractSection(responseText, ['mechanism', 'how it works', 'action', 'function']) || 'Mechanism information not available in response'
+        };
+        
+        setAnalysis(fallbackAnalysis);
       }
     } catch (err) {
       console.error('Error analyzing ingredient:', err);
-      setError('Failed to analyze ingredient. Please try again.');
+      setError(`Failed to analyze ingredient: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const extractSection = (text: string, keyword: string): string => {
+  const extractSection = (text: string, keywords: string[]): string => {
     const lines = text.split('\n');
-    const startIndex = lines.findIndex(line => 
-      line.toLowerCase().includes(keyword.toLowerCase())
-    );
     
-    if (startIndex === -1) return '';
-    
-    let content = '';
-    for (let i = startIndex + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith('-') || line.includes(':')) break;
-      if (line) content += line + ' ';
+    for (const keyword of keywords) {
+      const startIndex = lines.findIndex(line => 
+        line.toLowerCase().includes(keyword.toLowerCase())
+      );
+      
+      if (startIndex !== -1) {
+        let content = '';
+        for (let i = startIndex; i < Math.min(startIndex + 3, lines.length); i++) {
+          const line = lines[i].trim();
+          if (line && !line.includes(':') && !line.startsWith('-')) {
+            content += line + ' ';
+          }
+        }
+        if (content.trim()) return content.trim();
+      }
     }
     
-    return content.trim();
+    // If no specific section found, return first few sentences
+    const sentences = text.split('.').slice(0, 2);
+    return sentences.join('.') + (sentences.length > 1 ? '.' : '');
   };
 
   return (
@@ -179,7 +214,7 @@ Please format your response as a JSON object with these exact keys: benefits, sa
             <Card className="border-0 shadow-md">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold">Analysis Results</h2>
+                  <h2 className="text-xl font-semibold">Analysis Results for "{ingredient}"</h2>
                   <div className="flex items-center space-x-1">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />

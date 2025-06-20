@@ -47,9 +47,11 @@ export default function RoutineGenerator() {
     setError("");
     
     try {
+      const GEMINI_API_KEY = 'AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ';
+      
       const prompt = `You are a skincare expert. Create a detailed morning and evening skincare routine for someone with ${skinType} skin and the following concerns: ${skinConcerns.join(', ')}.
 
-Please provide a comprehensive routine with specific product types, application instructions, timing, and benefits. Format your response as a JSON object with this structure:
+Please provide a comprehensive routine with specific product types, application instructions, timing, and benefits. Format your response as a JSON object with this exact structure:
 
 {
   "morning_routine": [
@@ -78,7 +80,7 @@ Please provide a comprehensive routine with specific product types, application 
 
 Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include specific timing and detailed instructions.`;
 
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,25 +100,41 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
       const data = await response.json();
       
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        const responseText = data.candidates[0].content.parts[0].text;
-        
-        // Try to extract JSON from the response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response structure from API');
+      }
+
+      const responseText = data.candidates[0].content.parts[0].text;
+      console.log('Raw API response:', responseText);
+      
+      // Try to extract JSON from the response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
           const routineData = JSON.parse(jsonMatch[0]);
+          
+          // Validate the structure
+          if (!routineData.morning_routine || !routineData.evening_routine) {
+            throw new Error('Invalid routine structure in response');
+          }
+          
           setRoutine(routineData);
-        } else {
-          throw new Error('Invalid response format');
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError);
+          throw new Error('Failed to parse routine data from API response');
         }
       } else {
-        throw new Error('Invalid response from API');
+        throw new Error('No valid JSON found in API response');
       }
     } catch (err) {
       console.error('Error generating routine:', err);
-      setError('Failed to generate routine. Please try again.');
+      setError(`Failed to generate routine: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }

@@ -29,19 +29,27 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Show skin assessment if not completed (but allow access to assessment page)
-  if (!hasCompletedAssessment && !location.pathname.includes('/assessment')) {
+  // If user hasn't completed assessment, only allow access to assessment page
+  if (!hasCompletedAssessment) {
+    if (location.pathname === '/dashboard/assessment') {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <SkinAssessment />
+        </div>
+      );
+    }
+    // Redirect to assessment for any other dashboard route
     return <Navigate to="/dashboard/assessment" replace />;
   }
   
+  // User has completed assessment, show full dashboard
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {hasCompletedAssessment && <Sidebar />}
+      <Sidebar />
       
-      <div className={`flex-1 ${hasCompletedAssessment ? 'ml-64' : ''}`}>
-        <main className={hasCompletedAssessment ? 'pt-6' : ''}>
+      <div className="flex-1 ml-64">
+        <main className="pt-6">
           <Routes>
-            <Route path="/assessment" element={<SkinAssessment />} />
             <Route path="/" element={<DashboardHome />} />
             <Route path="/analysis" element={<FacialAnalysis />} />
             <Route path="/ingredients" element={<IngredientChecker />} />
@@ -49,6 +57,8 @@ const DashboardPage: React.FC = () => {
             <Route path="/progress" element={<ProgressTracker />} />
             <Route path="/quick-fix" element={<QuickFix />} />
             <Route path="/settings" element={<Settings />} />
+            {/* Redirect assessment to dashboard if already completed */}
+            <Route path="/assessment" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
