@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import DashboardHome from '../components/dashboard/DashboardHome';
@@ -12,25 +12,42 @@ import QuickFix from '../components/dashboard/QuickFix';
 import Settings from '../components/dashboard/Settings';
 
 const DashboardPage: React.FC = () => {
-  const { isAuthenticated, loading, hasCompletedAssessment } = useAuth();
+  const { isAuthenticated, loading, hasCompletedAssessment, user } = useAuth();
   const location = useLocation();
   
-  // Show loading state
+  // Debug logging
+  useEffect(() => {
+    console.log('DashboardPage render:', {
+      isAuthenticated,
+      loading,
+      hasCompletedAssessment,
+      user: user?.email,
+      pathname: location.pathname
+    });
+  }, [isAuthenticated, loading, hasCompletedAssessment, user, location.pathname]);
+  
+  // Show loading state only for a reasonable time
   if (loading) {
+    console.log('DashboardPage: Showing loading state');
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
   
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    console.log('DashboardPage: User not authenticated, redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // If user hasn't completed assessment, only allow access to assessment page
   if (!hasCompletedAssessment) {
+    console.log('DashboardPage: Assessment not completed');
     if (location.pathname === '/dashboard/assessment') {
       return (
         <div className="min-h-screen bg-gray-50">
@@ -39,10 +56,12 @@ const DashboardPage: React.FC = () => {
       );
     }
     // Redirect to assessment for any other dashboard route
+    console.log('DashboardPage: Redirecting to assessment');
     return <Navigate to="/dashboard/assessment" replace />;
   }
   
   // User has completed assessment, show full dashboard
+  console.log('DashboardPage: Showing full dashboard');
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />

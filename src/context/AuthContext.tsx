@@ -33,12 +33,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        if (!mounted) return;
+
         if (error) {
           console.error('Error getting initial session:', error);
         } else {
@@ -54,7 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -63,6 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         console.log('Auth state changed:', event, session?.user?.email || 'No user');
         
         setSession(session);
@@ -80,7 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadUserProfile = async (userId: string) => {
@@ -162,11 +173,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      console.log('Signing out user...');
       setLoading(true);
+      
+      // Clear local state immediately
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      setHasCompletedAssessment(false);
+      
+      // Call the auth service to sign out
       await authService.signOut();
+      
+      console.log('User signed out successfully');
     } catch (error: any) {
       console.error('SignOut error in context:', error);
-      throw new Error(error.message || 'Failed to sign out');
+      // Even if there's an error, clear the local state
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      setHasCompletedAssessment(false);
     } finally {
       setLoading(false);
     }

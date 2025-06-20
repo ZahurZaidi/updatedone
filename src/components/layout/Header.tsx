@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import Button from '../common/Button';
 
 const Header: React.FC = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
@@ -29,6 +31,22 @@ const Header: React.FC = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      console.log('Header: Starting logout process...');
+      await signOut();
+      console.log('Header: Logout successful, navigating to home...');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Header: Logout error:', error);
+      // Even if there's an error, navigate to home
+      navigate('/', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <header 
@@ -112,10 +130,11 @@ const Header: React.FC = () => {
                 </Link>
                 <Button 
                   variant="outline" 
-                  onClick={logout}
-                  leftIcon={<LogOut className="h-4 w-4" />}
+                  onClick={handleLogout}
+                  isLoading={isLoggingOut}
+                  leftIcon={!isLoggingOut && <LogOut className="h-4 w-4" />}
                 >
-                  Logout
+                  {isLoggingOut ? 'Logging out...' : 'Logout'}
                 </Button>
               </div>
             ) : (
@@ -195,10 +214,11 @@ const Header: React.FC = () => {
                     Dashboard
                   </Link>
                   <button
-                    onClick={logout}
-                    className="text-base font-medium px-4 py-2 rounded-md text-left text-gray-700 hover:bg-gray-50"
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="text-base font-medium px-4 py-2 rounded-md text-left text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Logout
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </>
               ) : (

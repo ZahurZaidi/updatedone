@@ -70,9 +70,12 @@ class AuthService {
 
   async signOut() {
     try {
+      console.log('AuthService: Starting sign out process...');
+      
       // Mark current session as inactive
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        console.log('AuthService: Marking sessions as inactive for user:', user.id);
         await supabase
           .from('user_sessions')
           .update({ is_active: false })
@@ -80,11 +83,18 @@ class AuthService {
           .eq('is_active', true);
       }
 
+      console.log('AuthService: Calling supabase.auth.signOut()...');
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      if (error) {
+        console.error('AuthService: Supabase signOut error:', error);
+        throw error;
+      }
+      
+      console.log('AuthService: Sign out successful');
     } catch (error: any) {
-      console.error('SignOut error:', error);
-      throw new Error(error.message || 'Failed to sign out');
+      console.error('AuthService: SignOut error:', error);
+      // Don't throw the error - we want to clear local state even if server signout fails
     }
   }
 
