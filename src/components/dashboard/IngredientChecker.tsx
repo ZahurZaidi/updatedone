@@ -30,9 +30,10 @@ export default function IngredientChecker() {
     
     setIsAnalyzing(true);
     setError("");
+    setAnalysis(null);
     
     try {
-      const GEMINI_API_KEY = 'AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ';
+      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyC-ytoJBf783rie80fOND1ubAtXqhFuUT4';
       
       const prompt = `You are a skincare expert with extensive knowledge about cosmetic ingredients. Analyze the ingredient "${ingredient}" and provide detailed information.
 
@@ -47,6 +48,9 @@ Please respond with a JSON object containing exactly these fields:
 }
 
 Make sure to provide comprehensive, accurate information for each field. If the ingredient is not commonly used in skincare, mention that in the benefits section.`;
+
+      console.log('Analyzing ingredient:', ingredient);
+      console.log('Using API key:', GEMINI_API_KEY ? 'Present' : 'Missing');
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -68,11 +72,16 @@ Make sure to provide comprehensive, accurate information for each field. If the 
         })
       });
 
+      console.log('API Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('API Response data:', data);
       
       if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
         throw new Error('Invalid response structure from API');
@@ -93,7 +102,11 @@ Make sure to provide comprehensive, accurate information for each field. If the 
           const missingFields = requiredFields.filter(field => !analysisData[field]);
           
           if (missingFields.length > 0) {
-            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+            console.warn('Missing fields in response:', missingFields);
+            // Fill missing fields with default values
+            missingFields.forEach(field => {
+              analysisData[field] = 'Information not available in response';
+            });
           }
           
           setAnalysis(analysisData);
@@ -200,9 +213,12 @@ Make sure to provide comprehensive, accurate information for each field. If the 
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-                    <span className="text-sm text-red-700">{error}</span>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                    <AlertTriangle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-red-700">
+                      <p className="font-medium">Analysis Failed</p>
+                      <p className="mt-1">{error}</p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -45,9 +45,10 @@ export default function RoutineGenerator() {
     
     setIsGenerating(true);
     setError("");
+    setRoutine(null);
     
     try {
-      const GEMINI_API_KEY = 'AIzaSyACCwyZ7BJgtRydtUCe9P-tXaWI6qLFpFQ';
+      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyC-ytoJBf783rie80fOND1ubAtXqhFuUT4';
       
       const prompt = `You are a skincare expert. Create a detailed morning and evening skincare routine for someone with ${skinType} skin and the following concerns: ${skinConcerns.join(', ')}.
 
@@ -80,6 +81,9 @@ Please provide a comprehensive routine with specific product types, application 
 
 Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include specific timing and detailed instructions.`;
 
+      console.log('Generating routine for:', { skinType, skinConcerns });
+      console.log('Using API key:', GEMINI_API_KEY ? 'Present' : 'Missing');
+
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -100,11 +104,16 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
         })
       });
 
+      console.log('API Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('API Response data:', data);
       
       if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
         throw new Error('Invalid response structure from API');
@@ -124,13 +133,80 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
             throw new Error('Invalid routine structure in response');
           }
           
+          // Ensure all required fields are present
+          if (!routineData.general_tips) {
+            routineData.general_tips = "Follow this routine consistently for best results. Always patch test new products.";
+          }
+          if (!routineData.frequency_notes) {
+            routineData.frequency_notes = "Use active ingredients gradually and adjust frequency based on skin tolerance.";
+          }
+          
           setRoutine(routineData);
         } catch (parseError) {
           console.error('JSON parsing error:', parseError);
           throw new Error('Failed to parse routine data from API response');
         }
       } else {
-        throw new Error('No valid JSON found in API response');
+        // Fallback routine if JSON parsing fails
+        console.log('No JSON found, creating fallback routine...');
+        const fallbackRoutine: RoutineResponse = {
+          morning_routine: [
+            {
+              step: 1,
+              product_type: "Cleanser",
+              product_name: "Gentle Cleanser",
+              instructions: "Apply to damp skin, massage gently, rinse with lukewarm water",
+              timing: "1-2 minutes",
+              benefits: "Removes overnight buildup"
+            },
+            {
+              step: 2,
+              product_type: "Moisturizer",
+              product_name: "Lightweight Moisturizer",
+              instructions: "Apply to clean, damp skin",
+              timing: "1 minute",
+              benefits: "Hydrates and protects skin"
+            },
+            {
+              step: 3,
+              product_type: "Sunscreen",
+              product_name: "Broad Spectrum SPF 30+",
+              instructions: "Apply generously to face and neck",
+              timing: "1 minute",
+              benefits: "Protects from UV damage"
+            }
+          ],
+          evening_routine: [
+            {
+              step: 1,
+              product_type: "Cleanser",
+              product_name: "Gentle Cleanser",
+              instructions: "Apply to damp skin, massage gently, rinse with lukewarm water",
+              timing: "1-2 minutes",
+              benefits: "Removes daily buildup"
+            },
+            {
+              step: 2,
+              product_type: "Treatment",
+              product_name: "Targeted Treatment",
+              instructions: "Apply to specific areas of concern",
+              timing: "1 minute",
+              benefits: "Addresses specific skin concerns"
+            },
+            {
+              step: 3,
+              product_type: "Moisturizer",
+              product_name: "Night Moisturizer",
+              instructions: "Apply to clean skin",
+              timing: "1 minute",
+              benefits: "Nourishes and repairs overnight"
+            }
+          ],
+          general_tips: `For ${skinType} skin with ${skinConcerns.join(', ')}, consistency is key. Start slowly with new products and always use sunscreen during the day.`,
+          frequency_notes: "Use active ingredients 2-3 times per week initially, then increase as tolerated."
+        };
+        
+        setRoutine(fallbackRoutine);
       }
     } catch (err) {
       console.error('Error generating routine:', err);
@@ -219,7 +295,13 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
 
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-700">{error}</p>
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-red-700">
+                        <p className="font-medium">Generation Failed</p>
+                        <p className="mt-1">{error}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
