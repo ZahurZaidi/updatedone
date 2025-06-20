@@ -1,7 +1,7 @@
 import { useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { Sparkles, Loader2, Sun, Moon, Clock, Info } from "lucide-react"
+import { Sparkles, Loader2, Sun, Moon, Clock, Info, AlertTriangle } from "lucide-react"
 
 interface RoutineStep {
   step: number;
@@ -84,7 +84,7 @@ Provide 4-6 steps for morning routine and 5-7 steps for evening routine. Include
       console.log('Generating routine for:', { skinType, skinConcerns });
       console.log('Using API key:', GEMINI_API_KEY ? 'Present' : 'Missing');
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
