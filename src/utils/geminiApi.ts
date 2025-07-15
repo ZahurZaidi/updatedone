@@ -284,6 +284,100 @@ Provide a comprehensive response in JSON format:
   }
 }
 
+export async function analyzeSkinTypeFromAssessment(skinAnswers: string[], lifestyleAnswers: Record<string, string>): Promise<{ skinType: string; hydrationLevel: string }> {
+  try {
+    const prompt = `You are a certified dermatologist with 15+ years of experience. Analyze the following comprehensive skin assessment to determine the exact skin type and hydration level.
+
+**Skin Assessment Responses:**
+${skinAnswers.map((answer, index) => `${index + 1}. ${answer}`).join('\n')}
+
+**Lifestyle Assessment Responses:**
+${Object.entries(lifestyleAnswers).map(([key, value]) => `${key}: ${value}`).join('\n')}
+
+Based on this comprehensive assessment, provide your professional analysis in the following JSON format:
+
+{
+  "skin_type": "One of: Dry, Oily, Combination, Normal, Sensitive, Acne-Prone, Mature, or a combination like 'Sensitive Dry' or 'Oily Acne-Prone'",
+  "hydration_level": "One of: Low, Medium, Good, High, or Variable"
+}
+
+**Analysis Guidelines:**
+- Consider all responses holistically, not just individual answers
+- Factor in lifestyle elements (water intake, sun exposure, sleep, etc.) that affect skin condition
+- Provide the most accurate classification based on the complete profile
+- Use compound types (like "Sensitive Dry") when multiple characteristics are prominent
+- Hydration level should reflect actual skin water content, not just oil production
+
+Respond with ONLY the JSON object, no additional text.`;
+
+    const response = await axios.post(
+      `${API_URL}?key=${API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 200,
+        }
+      }
+    );
+
+    if (response.data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const responseText = response.data.candidates[0].content.parts[0].text;
+      
+      // Try to extract JSON from the response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        try {
+          const analysisData = JSON.parse(jsonMatch[0]);
+          return {
+            skinType: analysisData.skin_type || 'Normal',
+            hydrationLevel: analysisData.hydration_level || 'Medium'
+          };
+        } catch (parseError) {
+          console.error('Error parsing Gemini response:', parseError);
+          // Fallback to basic logic
+          return getFallbackSkinType(skinAnswers);
+        }
+      } else {
+        // Fallback to basic logic
+        return getFallbackSkinType(skinAnswers);
+      }
+    } else {
+      return getFallbackSkinType(skinAnswers);
+    }
+  } catch (error: any) {
+    console.error('Error analyzing skin type with Gemini:', error);
+    return getFallbackSkinType(skinAnswers);
+  }
+}
+
+function getFallbackSkinType(answers: string[]): { skinType: string; hydrationLevel: string } {
+  const answerString = answers.join('|').toLowerCase();
+  
+  if (answerString.includes('tight') && answerString.includes('dry')) {
+    return { skinType: 'Dry', hydrationLevel: 'Low' };
+  } else if (answerString.includes('oily') && answerString.includes('shiny')) {
+    return { skinType: 'Oily', hydrationLevel: 'High' };
+  } else if (answerString.includes('comfortable') && answerString.includes('smooth')) {
+    return { skinType: 'Normal', hydrationLevel: 'Good' };
+  } else if (answerString.includes('irritated') || answerString.includes('reaction')) {
+    return { skinType: 'Sensitive', hydrationLevel: 'Variable' };
+  } else {
+    return { skinType: 'Combination', hydrationLevel: 'Variable' };
+  }
+}
+
 export async function generateSkinInsights(assessmentData: any): Promise<string> {
   try {
     const prompt = `As a dermatologist, provide personalized insights based on this comprehensive skin assessment:
