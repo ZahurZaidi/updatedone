@@ -30,13 +30,6 @@ const features = [
     icon: <Calendar className="h-12 w-12 text-primary-600" />,
     imageUrl: 'https://images.pexels.com/photos/3762876/pexels-photo-3762876.jpeg',
   },
-  {
-    id: 5,
-    title: 'Quick Fix Suggestions',
-    description: 'Find emergency solutions for sudden breakouts, redness, or other immediate skin concerns.',
-    icon: <Sparkles className="h-12 w-12 text-primary-600" />,
-    imageUrl: 'https://images.pexels.com/photos/5069432/pexels-photo-5069432.jpeg',
-  },
 ];
 
 const Features: React.FC = () => {
