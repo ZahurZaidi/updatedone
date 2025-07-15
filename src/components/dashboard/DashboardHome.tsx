@@ -352,11 +352,11 @@ export default function DashboardHome() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Skin Type:</span>
-                  <span className="text-sm font-medium text-gray-900">{assessment?.skin_type || 'Unknown'}</span>
+                  <span className="text-sm font-medium text-gray-900">{userProfile?.skin_type || assessment?.skin_type || 'Unknown'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Hydration:</span>
-                  <span className="text-sm font-medium text-gray-900">{assessment?.hydration_level || 'Unknown'}</span>
+                  <span className="text-sm font-medium text-gray-900">{userProfile?.hydration_level || assessment?.hydration_level || 'Unknown'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Assessment:</span>
@@ -373,6 +373,68 @@ export default function DashboardHome() {
             </div>
           </Card>
 
+          {/* Lifestyle Profile */}
+          <Card className="border-0 shadow-md">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <span className="text-xl font-semibold">Lifestyle Profile</span>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Droplets className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Daily Water Intake</p>
+                    <p className="text-sm text-gray-600">{userProfile?.daily_water_intake || 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-orange-50 rounded-lg">
+                    <Sun className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Sun Exposure</p>
+                    <p className="text-sm text-gray-600">{userProfile?.sun_exposure || 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-green-50 rounded-lg">
+                    <Heart className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Current Skincare Steps</p>
+                    <p className="text-sm text-gray-600">{userProfile?.current_skincare_steps || 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Preferred Routine</p>
+                    <p className="text-sm text-gray-600">{userProfile?.comfortable_routine_length || 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                {userProfile?.known_allergies && userProfile.known_allergies.trim() !== '' && (
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 bg-red-50 rounded-lg">
+                      <Shield className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Known Allergies</p>
+                      <p className="text-sm text-gray-600">{userProfile.known_allergies}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
           {/* Tips & Recommendations */}
           <Card className="border-0 shadow-md">
             <div className="p-6">
@@ -382,12 +444,12 @@ export default function DashboardHome() {
               <div className="p-4 bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg">
                 <h4 className="font-medium text-sm text-gray-900 mb-2">💡 Personalized Care</h4>
                 <p className="text-sm text-gray-600">
-                  {assessment?.skin_type === 'Dry' && "Your dry skin needs extra hydration. Consider using a humidifier and drinking more water."}
-                  {assessment?.skin_type === 'Oily' && "For oily skin, use gentle cleansers and avoid over-washing which can increase oil production."}
-                  {assessment?.skin_type === 'Combination' && "Focus on different products for different areas - lighter on T-zone, richer on cheeks."}
-                  {assessment?.skin_type === 'Sensitive' && "Patch test new products and stick to fragrance-free, gentle formulations."}
-                  {assessment?.skin_type === 'Normal' && "Maintain your skin's balance with consistent, gentle care and sun protection."}
-                  {!assessment && "Complete your skin assessment to get personalized tips and recommendations."}
+                  {(userProfile?.skin_type || assessment?.skin_type) === 'Dry' && "Your dry skin needs extra hydration. Consider using a humidifier and drinking more water."}
+                  {(userProfile?.skin_type || assessment?.skin_type) === 'Oily' && "For oily skin, use gentle cleansers and avoid over-washing which can increase oil production."}
+                  {(userProfile?.skin_type || assessment?.skin_type) === 'Combination' && "Focus on different products for different areas - lighter on T-zone, richer on cheeks."}
+                  {(userProfile?.skin_type || assessment?.skin_type)?.includes('Sensitive') && "Patch test new products and stick to fragrance-free, gentle formulations."}
+                  {(userProfile?.skin_type || assessment?.skin_type) === 'Normal' && "Maintain your skin's balance with consistent, gentle care and sun protection."}
+                  {!userProfile?.skin_type && !assessment?.skin_type && "Complete your skin assessment to get personalized tips and recommendations."}
                 </p>
               </div>
             </div>
