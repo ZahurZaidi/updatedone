@@ -28,7 +28,6 @@ const Sidebar: React.FC = () => {
     { label: 'Progress Tracker', icon: <BarChart size={20} />, path: '/dashboard/progress' },
     { label: 'Ingredient Checker', icon: <Search size={20} />, path: '/dashboard/ingredients' },
     { label: 'Routine Generator', icon: <Calendar size={20} />, path: '/dashboard/routine' },
-    { label: 'Quick Fix', icon: <Zap size={20} />, path: '/dashboard/quick-fix' },
     { label: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings' },
   ];
 
