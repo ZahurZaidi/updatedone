@@ -31,12 +31,14 @@ interface UserProfile {
 export default function DashboardHome() {
   const { user, hasCompletedAssessment } = useAuth();
   const [assessment, setAssessment] = useState<SkinAssessment | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [skinInsights, setSkinInsights] = useState<string>("");
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   useEffect(() => {
     if (user && hasCompletedAssessment) {
       loadAssessmentData();
+      loadUserProfile();
     }
   }, [user, hasCompletedAssessment]);
 
@@ -56,6 +58,22 @@ export default function DashboardHome() {
       }
     } catch (error) {
       console.error('Error loading assessment:', error);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('daily_water_intake, sun_exposure, current_skincare_steps, comfortable_routine_length, known_allergies, side_effects_ingredients, skin_type, hydration_level')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (data && !error) {
+        setUserProfile(data);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
   };
 
