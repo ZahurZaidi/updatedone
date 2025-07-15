@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles, ClipboardList } from "lucide-react"
+import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles, ClipboardList, Droplets, Sun, Shield, Heart } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { supabase } from "../../lib/supabase"
@@ -15,6 +15,17 @@ interface SkinAssessment {
     lifestyle_answers: Record<string, string>;
   };
   created_at: string;
+}
+
+interface UserProfile {
+  daily_water_intake: string;
+  sun_exposure: string;
+  current_skincare_steps: string;
+  comfortable_routine_length: string;
+  known_allergies: string;
+  side_effects_ingredients: string;
+  skin_type: string;
+  hydration_level: string;
 }
 
 export default function DashboardHome() {
