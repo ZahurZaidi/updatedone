@@ -61,7 +61,6 @@ const DashboardPage: React.FC = () => {
             <Route path="/ingredients" element={<IngredientChecker />} />
             <Route path="/routine" element={<RoutineGenerator />} />
             <Route path="/progress" element={<ProgressTracker />} />
-            <Route path="/quick-fix" element={<QuickFix />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
