@@ -98,10 +98,6 @@ const Features: React.FC = () => {
                         {feature.title === 'Routine Generator' && item === 1 && 'Get step-by-step morning and evening routines'}
                         {feature.title === 'Routine Generator' && item === 2 && 'Customize product recommendations'}
                         {feature.title === 'Routine Generator' && item === 3 && 'Update as your skin changes'}
-                        
-                        {feature.title === 'Quick Fix Suggestions' && item === 1 && 'Instant solutions for sudden breakouts'}
-                        {feature.title === 'Quick Fix Suggestions' && item === 2 && 'DIY treatments using common household items'}
-                        {feature.title === 'Quick Fix Suggestions' && item === 3 && 'Emergency care for skin irritations'}
                       </span>
                     </li>
                   ))}
