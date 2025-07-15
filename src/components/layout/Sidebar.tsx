@@ -8,8 +8,7 @@ import {
   Settings, 
   User,
   ClipboardList,
-  BarChart,
-  Zap
+  BarChart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
