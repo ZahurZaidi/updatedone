@@ -8,7 +8,6 @@ import FacialAnalysis from '../components/dashboard/FacialAnalysis';
 import IngredientChecker from '../components/dashboard/IngredientChecker';
 import RoutineGenerator from '../components/dashboard/RoutineGenerator';
 import ProgressTracker from '../components/dashboard/ProgressTracker';
-import QuickFix from '../components/dashboard/QuickFix';
 import Settings from '../components/dashboard/Settings';
 
 const DashboardPage: React.FC = () => {
