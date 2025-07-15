@@ -57,30 +57,6 @@ const SkinAssessment: React.FC = () => {
     }
   };
 
-  const getSkinProfile = (answers: string[]) => {
-    // Find matching skin profile based on answers
-    for (const entry of skinAssessmentData) {
-      if (JSON.stringify(entry.answers) === JSON.stringify(answers)) {
-        return { skinType: entry.skin_type, hydration: entry.hydration };
-      }
-    }
-    
-    // Fallback logic if no exact match
-    const answerString = answers.join('|').toLowerCase();
-    
-    if (answerString.includes('tight') && answerString.includes('dry')) {
-      return { skinType: 'Dry', hydration: 'Low' };
-    } else if (answerString.includes('oily') && answerString.includes('shiny')) {
-      return { skinType: 'Oily', hydration: 'High' };
-    } else if (answerString.includes('comfortable') && answerString.includes('smooth')) {
-      return { skinType: 'Normal', hydration: 'Good' };
-    } else if (answerString.includes('irritated') || answerString.includes('reaction')) {
-      return { skinType: 'Sensitive', hydration: 'Variable' };
-    } else {
-      return { skinType: 'Combination', hydration: 'Variable' };
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       setError('Please log in to save your assessment');
@@ -110,13 +86,14 @@ const SkinAssessment: React.FC = () => {
       console.log('Skin answers:', skinAnswers);
       console.log('Lifestyle answers:', lifestyleAnswers);
       
-      const { skinType, hydration } = getSkinProfile(skinAnswers);
-      console.log('Determined skin profile:', { skinType, hydration });
+      // Use Gemini API to analyze skin type instead of hardcoded logic
+      const { skinType, hydrationLevel } = await analyzeSkinTypeFromAssessment(skinAnswers, lifestyleAnswers);
+      console.log('Gemini API determined skin profile:', { skinType, hydrationLevel });
       
       const assessmentData = {
         user_id: user.id,
         skin_type: skinType,
-        hydration_level: hydration,
+        hydration_level: hydrationLevel,
         assessment_answers: {
           skin_answers: skinAnswers,
           lifestyle_answers: lifestyleAnswers
@@ -145,7 +122,7 @@ const SkinAssessment: React.FC = () => {
           .from('skin_assessments')
           .update({
             skin_type: skinType,
-            hydration_level: hydration,
+            hydration_level: hydrationLevel,
             assessment_answers: assessmentData.assessment_answers,
             updated_at: new Date().toISOString()
           })
@@ -171,11 +148,37 @@ const SkinAssessment: React.FC = () => {
 
       console.log('Assessment saved successfully:', data);
 
+      // Also update user profile with lifestyle data
+      const profileData = {
+        user_id: user.id,
+        skin_type: skinType,
+        hydration_level: hydrationLevel,
+        daily_water_intake: lifestyleAnswers.daily_water_intake,
+        sun_exposure: lifestyleAnswers.sun_exposure,
+        current_skincare_steps: lifestyleAnswers.current_skincare_steps,
+        comfortable_routine_length: lifestyleAnswers.comfortable_routine_length,
+        known_allergies: lifestyleAnswers.known_allergies,
+        side_effects_ingredients: lifestyleAnswers.side_effects_ingredients,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Updating user profile with lifestyle data:', profileData);
+
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update(profileData)
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        console.error('Error updating user profile:', profileError);
+        // Don't throw error here, as the assessment was saved successfully
+      }
+
       // Refresh assessment status in context
       await refreshAssessmentStatus();
       
       // Show success message
-      const successMessage = `Assessment completed successfully!\n\nYour Results:\n• Skin Type: ${skinType}\n• Hydration Level: ${hydration}\n\nYou can now access all features of the app!`;
+      const successMessage = `Assessment completed successfully!\n\nYour Results:\n• Skin Type: ${skinType}\n• Hydration Level: ${hydrationLevel}\n\nYou can now access all features of the app!`;
       alert(successMessage);
       
       // Navigate to dashboard
