@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import Button from '../common/Button';
 import Card from '../common/Card';
-import { skinAssessmentQuestions, lifestyleAssessmentQuestions, skinAssessmentData } from '../../data/skinAssessmentData';
+import { skinAssessmentQuestions, lifestyleAssessmentQuestions } from '../../data/skinAssessmentData';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { analyzeSkinTypeFromAssessment } from '../../utils/geminiApi';
 
 const SkinAssessment: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
