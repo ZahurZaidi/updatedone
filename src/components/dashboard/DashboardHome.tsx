@@ -196,14 +196,14 @@ export default function DashboardHome() {
   const quickStats = [
     {
       title: "Skin Type",
-      value: assessment?.skin_type || "Unknown",
+      value: userProfile?.skin_type || assessment?.skin_type || "Unknown",
       change: "From assessment",
       icon: CheckCircle,
       color: "text-blue-600",
     },
     {
       title: "Hydration Level",
-      value: assessment?.hydration_level || "Unknown",
+      value: userProfile?.hydration_level || assessment?.hydration_level || "Unknown",
       change: "Current status",
       icon: TrendingUp,
       color: "text-green-600",
