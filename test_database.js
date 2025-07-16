@@ -1,5 +1,5 @@
 // Fix Database Schema Issues
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://vnfdetnvevlykyufppgx.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuZmRldG52ZXZseWt5dWZwcGd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzOTk0MTYsImV4cCI6MjA2NTk3NTQxNn0.ncWM1LJ1vNMiD5tzwug3YKeaZSK1L9XTVWWi2_SDb_0';
@@ -93,8 +93,4 @@ async function runTests() {
     console.log('=== Testing Complete ===');
 }
 
-if (require.main === module) {
-    runTests().catch(console.error);
-}
-
-module.exports = { testDatabaseConnection, testUserSignup };
+runTests().catch(console.error);
