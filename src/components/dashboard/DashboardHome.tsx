@@ -391,20 +391,24 @@ export default function DashboardHome() {
           <Card className="border-0 shadow-md">
             <div className="p-6">
               <div className="flex items-center mb-4">
-                <span className="text-xl font-semibold">Your Skin Profile</span>
+                <span className="text-xl font-semibold">Assessment Summary</span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Skin Type:</span>
-                  <span className="text-sm font-medium text-gray-900">{userProfile?.skin_type || assessment?.skin_type || 'Unknown'}</span>
+                  <span className="text-sm text-gray-600">Assessment Date:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {assessment ? new Date(assessment.created_at).toLocaleDateString() : 'Not completed'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Hydration:</span>
-                  <span className="text-sm font-medium text-gray-900">{userProfile?.hydration_level || assessment?.hydration_level || 'Unknown'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Assessment:</span>
+                  <span className="text-sm text-gray-600">Status:</span>
                   <span className="text-sm font-medium text-green-600">Complete</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Last Updated:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {assessment ? new Date(assessment.updated_at || assessment.created_at).toLocaleDateString() : 'Not completed'}
+                  </span>
                 </div>
               </div>
               
