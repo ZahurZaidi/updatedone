@@ -111,7 +111,7 @@ const SkinAssessment: React.FC = () => {
       newAnswers[currentStep] = answer;
       setSkinAnswers(newAnswers);
     } else {
-      const currentQuestion = currentQuestions[currentStep];
+      const currentQuestion = currentQuestions[currentStep] as AssessmentQuestion;
       setLifestyleAnswers(prev => ({
         ...prev,
         [currentQuestion.key]: answer
