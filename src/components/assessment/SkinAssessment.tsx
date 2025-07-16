@@ -274,7 +274,7 @@ const SkinAssessment: React.FC = () => {
     }
   };
 
-  const currentQuestion = currentQuestions[currentStep];
+  const currentQuestion = currentQuestions[currentStep] as AssessmentQuestion;
   const currentAnswer = currentSection === 'skin' 
     ? skinAnswers[currentStep] 
     : lifestyleAnswers[currentQuestion.key];
