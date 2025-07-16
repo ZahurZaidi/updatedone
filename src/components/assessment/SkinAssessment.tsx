@@ -255,6 +255,13 @@ const SkinAssessment: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 {currentQuestion.q}
               </h2>
+              {currentQuestion.note && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 whitespace-pre-line">
+                    {currentQuestion.note}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
