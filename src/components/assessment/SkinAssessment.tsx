@@ -15,8 +15,83 @@ const SkinAssessment: React.FC = () => {
   const [lifestyleAnswers, setLifestyleAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
+  const [showRetakeConfirmation, setShowRetakeConfirmation] = useState(false);
+  const [isCheckingAssessment, setIsCheckingAssessment] = useState(true);
   const navigate = useNavigate();
-  const { user, refreshAssessmentStatus } = useAuth();
+  const { user, refreshAssessmentStatus, hasCompletedAssessment } = useAuth();
+
+  // Check if user has already completed assessment
+  useEffect(() => {
+    if (user && hasCompletedAssessment) {
+      setShowRetakeConfirmation(true);
+    }
+    setIsCheckingAssessment(false);
+  }, [user, hasCompletedAssessment]);
+
+  const handleConfirmRetake = () => {
+    setShowRetakeConfirmation(false);
+  };
+
+  const handleCancelRetake = () => {
+    navigate('/dashboard');
+  };
+
+  if (isCheckingAssessment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-8">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking your assessment status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRetakeConfirmation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="flex items-center justify-center min-h-screen">
+            <Card className="border-0 shadow-lg bg-white">
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle className="w-8 h-8 text-yellow-600" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Assessment Already Completed
+                </h2>
+                
+                <p className="text-gray-600 mb-6">
+                  You have already completed your skin assessment. Would you like to retake it? 
+                  This will update your current results and recommendations.
+                </p>
+                
+                <div className="flex space-x-4 justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelRetake}
+                    className="px-6"
+                  >
+                    Go Back to Dashboard
+                  </Button>
+                  <Button 
+                    onClick={handleConfirmRetake}
+                    className="px-6 bg-gradient-to-r from-primary-600 to-secondary-500"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Retake Assessment
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestions = currentSection === 'skin' ? skinAssessmentQuestions : lifestyleAssessmentQuestions;
   const totalQuestions = currentQuestions.length;
