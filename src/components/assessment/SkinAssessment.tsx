@@ -285,13 +285,18 @@ const SkinAssessment: React.FC = () => {
                   </button>
                 ))
               ) : (
-                <textarea
-                  value={currentAnswer || ''}
-                  onChange={(e) => handleAnswer(e.target.value)}
-                  placeholder="Please provide your answer..."
-                  className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none"
-                  rows={4}
-                />
+                <div>
+                  <textarea
+                    value={currentAnswer || ''}
+                    onChange={(e) => handleAnswer(e.target.value)}
+                    placeholder={currentQuestion.key === 'known_allergies' ? 
+                      "Please list any known allergies or ingredients that cause reactions...\n\nExample: fragrance, parabens, retinoids" : 
+                      "Please provide your answer..."
+                    }
+                    className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none"
+                    rows={4}
+                  />
+                </div>
               )}
             </div>
           </div>
