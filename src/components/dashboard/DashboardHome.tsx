@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Card from "../common/Card"
 import Button from "../common/Button"
-import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles, ClipboardList, Droplets, Sun, Shield, Heart } from "lucide-react"
+import { TrendingUp, Camera, Search, Zap, ArrowRight, CheckCircle, AlertCircle, Sparkles, ClipboardList, Droplets, Sun, Shield, Heart, RefreshCw } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { supabase } from "../../lib/supabase"
