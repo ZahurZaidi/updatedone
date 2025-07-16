@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { skinAssessmentQuestions, lifestyleAssessmentQuestions } from '../../data/skinAssessmentData';
