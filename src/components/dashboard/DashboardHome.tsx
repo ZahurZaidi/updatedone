@@ -309,18 +309,18 @@ export default function DashboardHome() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {quickStats.map((stat, index) => (
           <Card key={index} className="border-0 shadow-md">
-            <div className="p-6">
+            <div className="p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <p className="text-sm text-gray-500 mt-1">{stat.change}</p>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-600 mb-1">{stat.title}</p>
+                  <p className="text-sm font-bold text-gray-900 mb-1 break-words">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.change}</p>
                 </div>
-                <div className={`p-3 rounded-lg bg-gray-50 ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
+                <div className={`p-2 rounded-lg ${stat.bgColor} ${stat.color} ml-2 flex-shrink-0`}>
+                  <stat.icon className="w-4 h-4" />
                 </div>
               </div>
             </div>
