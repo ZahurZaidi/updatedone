@@ -200,22 +200,66 @@ export default function DashboardHome() {
       change: "From assessment",
       icon: CheckCircle,
       color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
       title: "Hydration Level",
       value: userProfile?.hydration_level || assessment?.hydration_level || "Unknown",
       change: "Current status",
-      icon: TrendingUp,
-      color: "text-green-600",
+      icon: Droplets,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
-      title: "Assessment Date",
-      value: assessment ? new Date(assessment.created_at).toLocaleDateString() : "Not completed",
-      change: "Last updated",
-      icon: AlertCircle,
-      color: "text-orange-600",
+      title: "Daily Water Intake",
+      value: userProfile?.daily_water_intake || "Not specified",
+      change: "Lifestyle factor",
+      icon: Droplets,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-50"
     },
+    {
+      title: "Sun Exposure",
+      value: userProfile?.sun_exposure || "Not specified",
+      change: "Daily routine",
+      icon: Sun,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    },
+    {
+      title: "Skincare Steps",
+      value: userProfile?.current_skincare_steps || "Not specified",
+      change: "Current routine",
+      icon: Heart,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50"
+    },
+    {
+      title: "Preferred Routine",
+      value: userProfile?.comfortable_routine_length || "Not specified",
+      change: "Comfort level",
+      icon: Sparkles,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    // Only show allergies if they exist and are not empty
+    ...(userProfile?.known_allergies && userProfile.known_allergies.trim() !== '' ? [{
+      title: "Known Allergies",
+      value: userProfile.known_allergies.length > 30 ? 
+        userProfile.known_allergies.substring(0, 30) + "..." : 
+        userProfile.known_allergies,
+      change: "Safety info",
+      icon: Shield,
+      color: "text-red-600",
+      bgColor: "bg-red-50"
+    }] : [])
   ]
+
+  const handleRetakeAssessment = () => {
+    if (window.confirm("Are you sure you want to retake your skin assessment? This will update your current results.")) {
+      window.location.href = "/dashboard/assessment";
+    }
+  }
 
   const quickActions = [
     {
