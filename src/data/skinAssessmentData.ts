@@ -254,7 +254,8 @@ export const lifestyleAssessmentQuestions = [
   {
     "key": "known_allergies",
     "q": "Please specify any known skincare allergies or ingredients that cause reactions:",
-    "opts": null
+    "opts": null,
+    "note": "Common allergens include: fragrance, parabens, sulfates, retinoids, alpha/beta hydroxy acids, essential oils, alcohol, lanolin\n\nTip: Check ingredient lists of products that have caused reactions in the past"
   },
   {
     "key": "side_effects_ingredients",
