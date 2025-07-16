@@ -500,6 +500,26 @@ export default function DashboardHome() {
           </Card>
         </div>
       </div>
+
+      {/* Retake Assessment Button */}
+      <div className="mt-8 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="p-4 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg border border-primary-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Want to Update Your Assessment?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Retake your skin assessment to update your profile and get fresh recommendations.
+            </p>
+            <Button 
+              onClick={handleRetakeAssessment}
+              variant="outline"
+              className="w-full border-primary-300 hover:bg-primary-50"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retake Assessment
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
