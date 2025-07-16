@@ -8,6 +8,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { analyzeSkinTypeFromAssessment } from '../../utils/geminiApi';
 
+interface AssessmentQuestion {
+  key: string;
+  q: string;
+  opts: string[] | null;
+  note?: string;
+}
+
 const SkinAssessment: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentSection, setCurrentSection] = useState<'skin' | 'lifestyle'>('skin');
